@@ -1,56 +1,115 @@
 package com.example.project_ifloodguard;
 
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.drawerlayout.widget.DrawerLayout;
+
+import android.content.Intent;
 import android.os.Bundle;
-import android.widget.TextView;
+import android.view.MenuItem;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
+import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 public class HomePageActivity extends AppCompatActivity {
 
-    private TextView welcomeText;
-    private FirebaseAuth firebaseAuth;
-    private DatabaseReference databaseReference;
+    DrawerLayout drawerLayout;
+    NavigationView navView;
+    ActionBarDrawerToggle toggle;
+    FrameLayout contentFrame;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_homepage);
 
-        welcomeText = findViewById(R.id.welcomeText);
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navView = findViewById(R.id.nav_view);
+        contentFrame = findViewById(R.id.content_frame);
 
-        firebaseAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+        // Setup toolbar
+        androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle("Home");
 
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
-            databaseReference = FirebaseDatabase.getInstance().getReference("Users").child(userId);
+        // Drawer toggle (hamburger icon)
+        toggle = new ActionBarDrawerToggle(
+                this,
+                drawerLayout,
+                toolbar,
+                R.string.navigation_drawer_open,
+                R.string.navigation_drawer_close
+        );
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
 
-            databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
-                        User user = snapshot.getValue(User.class);
-                        if (user != null) {
-                            welcomeText.setText("Welcome, " + user.getFullName() + "!\nPhone: " + user.getPhone());
-                        }
-                    }
-                }
+        // Load default content
+        loadFragment(R.layout.content_home_page);
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    Toast.makeText(HomePageActivity.this, "Failed to load user info", Toast.LENGTH_SHORT).show();
-                }
-            });
+        // Handle menu item clicks
+        navView.setNavigationItemSelectedListener(item -> {
+            handleNavigation(item);
+            return true;
+        });
+    }
+
+    private void handleNavigation(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.nav_home) {
+            getSupportActionBar().setTitle("Home");
+            loadFragment(R.layout.content_home_page);
+
+        } else if (id == R.id.nav_sensor) {
+            getSupportActionBar().setTitle("Water Level Status");
+            loadFragment(R.layout.content_water_level);
+
+        } else if (id == R.id.nav_alerts) {
+            getSupportActionBar().setTitle("Alert History");
+            loadFragment(R.layout.content_alert_history);
+
+        } else if (id == R.id.nav_pps) {
+            getSupportActionBar().setTitle("PPS List");
+            loadFragment(R.layout.content_pps_list);
+
+        } else if (id == R.id.nav_contacts) {
+            getSupportActionBar().setTitle("Emergency Responder Contact");
+            loadFragment(R.layout.content_emergency_contact);
+
+        } else if (id == R.id.nav_about) {
+            getSupportActionBar().setTitle("Profile Update");
+            loadFragment(R.layout.content_profile_update);
+
+        } else if (id == R.id.nav_logout) {
+            // Firebase logout
+            FirebaseAuth.getInstance().signOut();
+            Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+
+            // Redirect to LoginActivity
+            Intent intent = new Intent(this, LoginActivity.class); // Replace with your login activity class
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        }
+
+        drawerLayout.closeDrawers();
+    }
+
+    // Load the layout into content_frame dynamically
+    private void loadFragment(int layoutResId) {
+        contentFrame.removeAllViews();
+        getLayoutInflater().inflate(layoutResId, contentFrame, true);
+    }
+
+    // Close drawer on back press
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout.isDrawerOpen(androidx.core.view.GravityCompat.START)) {
+            drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
+        } else {
+            super.onBackPressed();
         }
     }
 }
