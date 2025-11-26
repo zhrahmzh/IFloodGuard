@@ -63,10 +63,10 @@ public class HomePageActivity extends AppCompatActivity {
             loadFragment(R.layout.content_home_page);
 
         } else if (id == R.id.nav_sensor) {
-            getSupportActionBar().setTitle("Water Level Status");
-            loadFragment(R.layout.content_water_level);
+            startActivity(new Intent(this, WaterLevelStatusActivity.class));
 
-        } else if (id == R.id.nav_alerts) {
+
+    } else if (id == R.id.nav_alerts) {
             getSupportActionBar().setTitle("Alert History");
             loadFragment(R.layout.content_alert_history);
 
