@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="#FFFFFF">
+
+        <!-- PPS Name -->
+        <TextView
+            android:id="@+id/tvPPSName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dewan Serbaguna"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#1565C0"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <!-- Capacity Info -->
+            <TextView
+                android:id="@+id/tvCapacity"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Kapasiti: 500"
+                android:textColor="#666666"/>
+
+            <!-- Edit Hint -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tap to Edit"
+                android:textSize="10sp"
+                android:textColor="#AAAAAA"
+                android:textStyle="italic"/>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

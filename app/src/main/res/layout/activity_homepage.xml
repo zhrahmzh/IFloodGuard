@@ -20,7 +20,8 @@
             android:background="?attr/colorPrimary"
             android:title="Home"
             android:titleTextColor="@android:color/white"
-            android:elevation="4dp"/>
+            android:elevation="4dp"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />  <!-- ADD THIS LINE -->
 
         <!-- Homepage Content Placeholder -->
         <FrameLayout
