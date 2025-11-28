@@ -105,11 +105,10 @@ public class AlertHistoryActivity extends AppCompatActivity {
             holder.tvStatus.setText(item.status);
             holder.tvLevel.setText(String.format(Locale.US, "%.2f cm", item.distance));
 
-            // Format Time
+            // Inside onBindViewHolder
             if (item.timestamp != null) {
-                // Note: If Arduino sends 'millis', this date will be 1970.
-                // We need Arduino to send real time or server time for this to be accurate.
-                Date date = new Date(item.timestamp);
+                // FIX: Multiply by 1000L (L ensures it handles the math as Long)
+                Date date = new Date(item.timestamp * 1000L);
                 SimpleDateFormat sdf = new SimpleDateFormat("dd/MM HH:mm", Locale.getDefault());
                 holder.tvTime.setText(sdf.format(date));
             } else {

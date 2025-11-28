@@ -175,9 +175,8 @@ public class HomePageActivity extends AppCompatActivity {
             }
             if (btnContacts != null) {
                 btnContacts.setOnClickListener(v -> {
-                    getSupportActionBar().setTitle("Emergency Contacts");
-                    loadFragment(R.layout.content_emergency_contact);
-                    tvHomeStatus = null;
+                    Intent intent = new Intent(HomePageActivity.this, EmergencyContactActivity.class);
+                    startActivity(intent);
                 });
             }
             if (btnSOS != null) {
@@ -218,9 +217,8 @@ public class HomePageActivity extends AppCompatActivity {
             startActivity(intent);
 
         } else if (id == R.id.nav_contacts) {
-            getSupportActionBar().setTitle("Emergency Contacts");
-            loadFragment(R.layout.content_emergency_contact);
-            tvHomeStatus = null;
+            Intent intent = new Intent(this, EmergencyContactActivity.class);
+            startActivity(intent);
 
         } else if (id == R.id.nav_about) {
             getSupportActionBar().setTitle("Profile");

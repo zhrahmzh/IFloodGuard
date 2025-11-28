@@ -27,6 +27,7 @@
         <activity android:name=".RegisterActivity" />
         <activity android:name=".HomePageActivity" />
         <activity android:name=".AlertHistoryActivity" />
+        <activity android:name=".EmergencyContactActivity" />
 
         <!-- ADD THIS LINE BELOW TO FIX THE CRASH -->
         <activity android:name=".PPSListActivity" />

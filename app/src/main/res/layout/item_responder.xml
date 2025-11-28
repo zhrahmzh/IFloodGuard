@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical"
+        android:background="#FFFFFF">
+
+        <!-- Icon (Left) -->
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_dialog_info"
+            app:tint="#D32F2F"
+            android:layout_marginEnd="15dp"/>
+
+        <!-- Text Info (Middle) -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvRespName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Balai Polis Skudai"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#000000"/>
+
+            <TextView
+                android:id="@+id/tvRespType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="POLIS (PDRM)"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#D32F2F"/>
+
+            <TextView
+                android:id="@+id/tvRespPhone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="07-5555555"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:layout_marginTop="2dp"/>
+        </LinearLayout>
+
+        <!-- Call Button (Right) -->
+        <ImageButton
+            android:id="@+id/btnCallNow"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_call"
+            android:background="@drawable/ic_launcher_background"
+            android:backgroundTint="#E8F5E9"
+            app:tint="#2E7D32"/>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
