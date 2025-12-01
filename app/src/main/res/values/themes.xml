@@ -6,4 +6,13 @@
     </style>
 
     <style name="Theme.Project_IFloodGuard" parent="Base.Theme.Project_IFloodGuard" />
+
+    <!-- Custom Style for Navigation Menu Text -->
+    <!-- Ideally, place this in styles.xml, but themes.xml works too -->
+    <style name="NavDrawerTextStyle" parent="TextAppearance.AppCompat.Body1">
+        <item name="android:textSize">18sp</item> <!-- Increased size for readability -->
+        <item name="android:textStyle">bold</item> <!-- Bold for emphasis -->
+        <item name="android:textColor">#333333</item> <!-- Dark grey for contrast -->
+        <item name="android:fontFamily">sans-serif-medium</item> <!-- Modern font -->
+    </style>
 </resources>

@@ -5,8 +5,6 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -51,16 +49,24 @@ public class HomePageActivity extends AppCompatActivity {
     private static final String CHANNEL_ID = "flood_alert_channel";
     private String lastKnownStatus = "NORMAL";
 
+    // --- User Role ---
+    String userRole = "Staff"; // Default
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_homepage);
 
-        // 1. Setup Notification System
+        // 1. Get Role
+        if (getIntent().hasExtra("USER_ROLE")) {
+            userRole = getIntent().getStringExtra("USER_ROLE");
+        }
+
+        // 2. Setup Notifications
         createNotificationChannel();
         checkPermission();
 
-        // 2. Setup Navigation Drawer
+        // 3. Setup Navigation Drawer
         drawerLayout = findViewById(R.id.drawer_layout);
         navView = findViewById(R.id.nav_view);
         contentFrame = findViewById(R.id.content_frame);
@@ -72,36 +78,43 @@ public class HomePageActivity extends AppCompatActivity {
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // 3. Firebase Connection
+        // 4. Firebase Connection
         dbRef = FirebaseDatabase
                 .getInstance("https://ifloodguard-default-rtdb.asia-southeast1.firebasedatabase.app/")
                 .getReference("waterLevel");
 
-        // 4. Load Home Page
+        // 5. Load Layout
         loadFragment(R.layout.content_home_page);
+
+        // 6. Connect Buttons & Apply Role Rules
         refreshHomeViews();
+
+        // 7. Start Listening
         startFirebaseListener();
 
-        // 5. Navigation Listener
+        // 8. Navigation Listener
         navView.setNavigationItemSelectedListener(item -> {
             handleNavigation(item);
             return true;
         });
     }
 
-    // --- CORE LOGIC: LISTENING TO IOT DATA ---
+    // --- LISTENING TO IOT DATA ---
     private void startFirebaseListener() {
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
-                    Double distance = snapshot.child("distance").getValue(Double.class);
+                    Object distObj = snapshot.child("distance").getValue();
+                    Double distance = 0.0;
+                    if (distObj instanceof Long) distance = ((Long) distObj).doubleValue();
+                    else if (distObj instanceof Double) distance = (Double) distObj;
+
                     String status = snapshot.child("status").getValue(String.class);
                     String location = snapshot.child("location").getValue(String.class);
 
-                    if (tvHomeStatus != null && status != null && distance != null) {
+                    if (tvHomeStatus != null && status != null) {
                         tvHomeStatus.setText(status);
-
                         String formattedDist = String.format(Locale.US, "%.2f", distance);
                         tvHomeLevel.setText(formattedDist + " cm");
 
@@ -114,15 +127,21 @@ public class HomePageActivity extends AppCompatActivity {
                             tvHomeLocation.setText("Location Unknown");
                         }
 
-                        if(status.equalsIgnoreCase("DANGER") || status.contains("DANGER")) {
-                            tvHomeStatus.setTextColor(Color.RED);
-                        } else if(status.equalsIgnoreCase("WARNING")) {
-                            tvHomeStatus.setTextColor(Color.parseColor("#FFA726"));
+                        View layoutStatus = (View) tvHomeStatus.getParent();
+                        if (status.contains("DANGER")) {
+                            tvHomeStatus.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_danger_red));
+                            tvHomeLevel.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_danger_red));
+                            if(layoutStatus != null) layoutStatus.setBackgroundColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_danger_bg));
+                        } else if (status.contains("WARNING")) {
+                            tvHomeStatus.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_warning_yellow));
+                            tvHomeLevel.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_warning_yellow));
+                            if(layoutStatus != null) layoutStatus.setBackgroundColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_warning_bg));
                         } else {
-                            tvHomeStatus.setTextColor(Color.parseColor("#4CAF50"));
+                            tvHomeStatus.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_normal_green));
+                            tvHomeLevel.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.brand_blue));
+                            if(layoutStatus != null) layoutStatus.setBackgroundColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_normal_bg));
                         }
                     }
-
                     if (status != null) {
                         checkRiskAndNotify(status, distance);
                     }
@@ -133,63 +152,56 @@ public class HomePageActivity extends AppCompatActivity {
         });
     }
 
-    // --- UI HELPER: CONNECTING BUTTONS ---
+    // --- UI HELPER: CONNECTING BUTTONS & RESTRICTING STAFF ---
     private void refreshHomeViews() {
         tvHomeLevel = findViewById(R.id.tvHomeLevel);
         tvHomeStatus = findViewById(R.id.tvHomeStatus);
         tvHomeTime = findViewById(R.id.tvHomeTime);
         tvHomeLocation = findViewById(R.id.tvHomeLocation);
 
-        try {
-            View btnProfile = findViewById(R.id.btnQuickProfile);
-            View btnPPS = findViewById(R.id.btnQuickPPS);
-            View btnHistory = findViewById(R.id.btnQuickHistory);
-            View btnContacts = findViewById(R.id.btnQuickContacts);
-            View btnSOS = findViewById(R.id.btnSOS);
+        View btnPPS = findViewById(R.id.btnQuickPPS);
+        View btnContacts = findViewById(R.id.btnQuickContacts);
+        View btnHistory = findViewById(R.id.btnQuickHistory);
 
-            if (btnProfile != null) {
-                btnProfile.setOnClickListener(v -> {
-                    getSupportActionBar().setTitle("Update Info");
-                    loadFragment(R.layout.content_profile_update);
-                    tvHomeStatus = null;
-                });
-            }
-            if (btnPPS != null) {
-                btnPPS.setOnClickListener(v -> {
-                    // Start PPS Activity
-                    Intent intent = new Intent(HomePageActivity.this, PPSListActivity.class);
-                    startActivity(intent);
-                });
-            }
-            if (btnHistory != null) {
-                btnHistory.setOnClickListener(v -> {
-                    // OLD CODE (Delete this):
-                    // getSupportActionBar().setTitle("Alert History");
-                    // loadFragment(R.layout.content_alert_history);
-                    // tvHomeStatus = null;
+        // --- NEW LOGIC: HIDE BUTTONS FOR STAFF ---
+        if (userRole.equalsIgnoreCase("Staff")) {
+            // Staff sees ONLY History
+            if (btnPPS != null) btnPPS.setVisibility(View.GONE);
+            if (btnContacts != null) btnContacts.setVisibility(View.GONE);
+            if (btnHistory != null) btnHistory.setVisibility(View.VISIBLE);
+        } else {
+            // Admin sees EVERYTHING
+            if (btnPPS != null) btnPPS.setVisibility(View.VISIBLE);
+            if (btnContacts != null) btnContacts.setVisibility(View.VISIBLE);
+            if (btnHistory != null) btnHistory.setVisibility(View.VISIBLE);
+        }
 
-                    // NEW CODE (Use this):
-                    Intent intent = new Intent(HomePageActivity.this, AlertHistoryActivity.class);
-                    startActivity(intent);
-                });
-            }
-            if (btnContacts != null) {
-                btnContacts.setOnClickListener(v -> {
-                    Intent intent = new Intent(HomePageActivity.this, EmergencyContactActivity.class);
-                    startActivity(intent);
-                });
-            }
-            if (btnSOS != null) {
-                btnSOS.setOnClickListener(v -> {
-                    Intent dialIntent = new Intent(Intent.ACTION_DIAL);
-                    dialIntent.setData(Uri.parse("tel:999"));
-                    startActivity(dialIntent);
-                });
-            }
-        } catch (Exception e) {}
+        // Set Click Listeners
+        if (btnPPS != null) {
+            btnPPS.setOnClickListener(v -> {
+                Intent intent = new Intent(HomePageActivity.this, PPSListActivity.class);
+                intent.putExtra("USER_ROLE", userRole);
+                startActivity(intent);
+            });
+        }
+
+        if (btnContacts != null) {
+            btnContacts.setOnClickListener(v -> {
+                Intent intent = new Intent(HomePageActivity.this, EmergencyContactActivity.class);
+                intent.putExtra("USER_ROLE", userRole);
+                startActivity(intent);
+            });
+        }
+
+        if (btnHistory != null) {
+            btnHistory.setOnClickListener(v -> {
+                Intent intent = new Intent(HomePageActivity.this, AlertHistoryActivity.class);
+                intent.putExtra("USER_ROLE", userRole);
+                startActivity(intent);
+            });
+        }
     }
 
-    // --- NAVIGATION DRAWER LOGIC ---
     private void handleNavigation(MenuItem item) {
         int id = item.getItemId();
 
@@ -198,32 +210,11 @@ public class HomePageActivity extends AppCompatActivity {
             loadFragment(R.layout.content_home_page);
             refreshHomeViews();
 
-        } else if (id == R.id.nav_sensor) {
-            startActivity(new Intent(this, WaterLevelStatusActivity.class));
-
-        } else if (id == R.id.nav_alerts) {
-            // OLD CODE (Delete this):
-            // getSupportActionBar().setTitle("Alert History");
-            // loadFragment(R.layout.content_alert_history);
-            // tvHomeStatus = null;
-
-            // NEW CODE (Use this):
-            Intent intent = new Intent(this, AlertHistoryActivity.class);
+        } else if (id == R.id.nav_profile) {
+            getSupportActionBar().setTitle("My Profile");
+            Intent intent = new Intent(this, ProfileUpdateActivity.class);
+            intent.putExtra("USER_ROLE", userRole);
             startActivity(intent);
-
-        } else if (id == R.id.nav_pps) {
-            // Start PPS Activity
-            Intent intent = new Intent(this, PPSListActivity.class);
-            startActivity(intent);
-
-        } else if (id == R.id.nav_contacts) {
-            Intent intent = new Intent(this, EmergencyContactActivity.class);
-            startActivity(intent);
-
-        } else if (id == R.id.nav_about) {
-            getSupportActionBar().setTitle("Profile");
-            loadFragment(R.layout.content_profile_update);
-            tvHomeStatus = null;
 
         } else if (id == R.id.nav_logout) {
             FirebaseAuth.getInstance().signOut();
@@ -236,7 +227,6 @@ public class HomePageActivity extends AppCompatActivity {
         drawerLayout.closeDrawers();
     }
 
-    // --- HELPER FUNCTIONS ---
     private void loadFragment(int layoutResId) {
         contentFrame.removeAllViews();
         getLayoutInflater().inflate(layoutResId, contentFrame, true);
@@ -246,9 +236,9 @@ public class HomePageActivity extends AppCompatActivity {
         if (!currentStatus.equals(lastKnownStatus)) {
             String formattedDist = String.format(Locale.US, "%.2f", distance);
             if (currentStatus.contains("DANGER")) {
-                sendNotification("🚨 FLOOD DANGER!", "Water Level Critical: " + formattedDist + "cm. Evacuate!");
+                sendNotification("🚨 FLOOD DANGER!", "Level: " + formattedDist + "cm. Evacuate!");
             } else if (currentStatus.contains("WARNING")) {
-                sendNotification("⚠️ Flood Warning", "Water Level Rising: " + formattedDist + "cm.");
+                sendNotification("⚠️ Flood Warning", "Level: " + formattedDist + "cm.");
             }
             lastKnownStatus = currentStatus;
         }

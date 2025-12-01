@@ -2,20 +2,30 @@ package com.example.project_ifloodguard;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
+import android.view.View;
+import android.widget.Button;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 public class WelcomeActivity extends AppCompatActivity {
 
+    Button btnGetStarted;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.welcome_activity);
+        setContentView(R.layout.welcome_activity); // Assuming your XML name is correct
 
-        new Handler().postDelayed(() -> {
-            Intent intent = new Intent(WelcomeActivity.this, RegisterActivity.class);
-            startActivity(intent);
-            finish(); // Prevent going back to welcome page
-        }, 2000); // 2 seconds
+        btnGetStarted = findViewById(R.id.btnGetStarted); // Check ID in XML
+
+        btnGetStarted.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // CORRECT FLOW: Go directly to Login
+                Intent intent = new Intent(WelcomeActivity.this, RegisterActivity.class);
+                startActivity(intent);
+                finish(); // Close welcome screen so back button doesn't return here
+            }
+        });
     }
 }

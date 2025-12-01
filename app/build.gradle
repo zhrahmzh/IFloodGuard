@@ -1,6 +1,6 @@
 plugins {
     id 'com.android.application'
-    id 'com.google.gms.google-services' // Firebase
+    id 'com.google.gms.google-services'
 }
 
 android {
@@ -21,6 +21,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
+    // --- ADD THIS BLOCK TO PREVENT BUILD ERRORS ---
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
@@ -29,9 +35,13 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
-    // Firebase dependencies (example)
+    // --- FIREBASE SETUP ---
+    // The BoM controls all versions below
     implementation platform('com.google.firebase:firebase-bom:32.2.2')
+
+    // Note: No version numbers needed here because of the BoM above
+    implementation 'com.google.firebase:firebase-firestore' // For User Profiles
+    implementation 'com.google.firebase:firebase-database'  // For IoT Water Level
+    implementation 'com.google.firebase:firebase-auth'      // For Login
     implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.firebase:firebase-database'
-    implementation 'com.google.firebase:firebase-auth'
 }

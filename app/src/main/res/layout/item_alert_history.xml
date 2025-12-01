@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_marginBottom="8dp"
     android:layout_marginHorizontal="4dp"
     app:cardCornerRadius="10dp"
@@ -11,49 +11,80 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:background="@android:color/white">
 
-        <!-- Color Bar -->
+        <!-- STATUS COLOR BAR (Left Indicator) -->
+        <!-- This view changes color (Green/Orange/Red) based on status -->
         <View
             android:id="@+id/viewStatusColor"
-            android:layout_width="10dp"
+            android:layout_width="8dp"
             android:layout_height="match_parent"
             android:background="#4CAF50"/>
 
+        <!-- CONTENT CONTAINER -->
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_weight="1"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="15dp">
+            android:padding="16dp">
 
-            <TextView
-                android:id="@+id/tvHistoryStatus"
-                android:layout_width="wrap_content"
+            <!-- ROW 1: STATUS & TIME -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="NORMAL"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:textColor="#333333"/>
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/tvHistoryLevel"
-                android:layout_width="wrap_content"
+                <!-- STATUS TEXT (e.g., NORMAL) -->
+                <TextView
+                    android:id="@+id/tvHistoryStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="NORMAL"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="#212121"/>
+
+                <!-- TIMESTAMP (e.g., 10:30 AM) -->
+                <TextView
+                    android:id="@+id/tvHistoryTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10:30 AM"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#757575"/>
+            </LinearLayout>
+
+            <!-- ROW 2: WATER LEVEL DETAILS -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Level: 120.5 cm"
-                android:textSize="14sp"
-                android:textColor="#666666"
-                android:layout_marginTop="4dp"/>
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Water Level: "
+                    android:textSize="14sp"
+                    android:textColor="#757575"/>
+
+                <!-- LEVEL VALUE (e.g., 808.03 cm) -->
+                <TextView
+                    android:id="@+id/tvHistoryLevel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="808.03 cm"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="#1565C0"
+                    android:layout_marginStart="4dp"/>
+            </LinearLayout>
+
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvHistoryTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="10:30 AM"
-            android:textSize="12sp"
-            android:textColor="#999999"
-            android:layout_gravity="center_vertical"
-            android:paddingEnd="15dp"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

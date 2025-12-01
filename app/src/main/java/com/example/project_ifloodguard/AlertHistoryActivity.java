@@ -36,6 +36,13 @@ public class AlertHistoryActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.content_alert_history);
+        // Inside onCreate...
+
+        // 1. Find the back button
+        android.widget.ImageView btnBack = findViewById(R.id.btnBack);
+
+        // 2. Set the click listener to close the page
+        btnBack.setOnClickListener(v -> finish());
 
         recyclerView = findViewById(R.id.recyclerHistory);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));

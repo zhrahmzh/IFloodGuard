@@ -3,8 +3,6 @@ package com.example.project_ifloodguard;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
-import android.text.TextUtils;
-import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -14,59 +12,76 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.FirebaseFirestore; // MUST BE FIRESTORE
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    EditText fullNameInput, emailInput, phoneInput, passwordInput;
-    Button registerButton;
-    TextView loginRedirect;
-    ImageView eyeIcon;
+    // 1. Declare UI Variables (Only the ones that exist in your XML now)
+    private EditText fullNameInput, emailInput, phoneInput, passwordInput;
+    private Button registerButton;
+    private TextView loginRedirect;
+    private ImageView eyeIcon;
 
-    boolean passwordVisible = false;
+    private boolean passwordVisible = false;
 
-    FirebaseAuth auth;
-    DatabaseReference usersDB;
+    // 2. Declare Firebase Variables
+    private FirebaseAuth auth;
+    private FirebaseFirestore firestore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
+        // 3. Initialize Views
         fullNameInput = findViewById(R.id.fullNameInput);
         emailInput = findViewById(R.id.emailInput);
         phoneInput = findViewById(R.id.phoneInput);
         passwordInput = findViewById(R.id.passwordInput);
+
         registerButton = findViewById(R.id.registerButton);
         loginRedirect = findViewById(R.id.loginRedirect);
         eyeIcon = findViewById(R.id.eyeIcon);
 
+        // 4. Initialize Firebase
         auth = FirebaseAuth.getInstance();
-        usersDB = FirebaseDatabase
-                .getInstance("https://ifloodguard-default-rtdb.asia-southeast1.firebasedatabase.app/")
-                .getReference("Users");
+        firestore = FirebaseFirestore.getInstance();
 
-        // PASSWORD VISIBILITY TOGGLE
+        // 5. Setup Listeners
         eyeIcon.setOnClickListener(v -> togglePasswordVisibility());
 
-        registerButton.setOnClickListener(v -> registerUser());
+        registerButton.setOnClickListener(v -> {
+            // Get text from inputs
+            String name = fullNameInput.getText().toString().trim();
+            String email = emailInput.getText().toString().trim();
+            String phone = phoneInput.getText().toString().trim();
+            String password = passwordInput.getText().toString().trim();
 
-        loginRedirect.setOnClickListener(v ->
-                startActivity(new Intent(RegisterActivity.this, LoginActivity.class)));
+            // Validate
+            if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(RegisterActivity.this, "Please fill all required fields", Toast.LENGTH_SHORT).show();
+            } else {
+                registerUser(name, email, phone, password);
+            }
+        });
+
+        if (loginRedirect != null) {
+            loginRedirect.setOnClickListener(v -> {
+                startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
+                finish();
+            });
+        }
     }
 
     private void togglePasswordVisibility() {
         if (passwordVisible) {
-            // Hide password
             passwordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
             eyeIcon.setImageResource(android.R.drawable.ic_menu_view);
             passwordVisible = false;
         } else {
-            // Show password
             passwordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
             eyeIcon.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
             passwordVisible = true;
@@ -74,59 +89,60 @@ public class RegisterActivity extends AppCompatActivity {
         passwordInput.setSelection(passwordInput.getText().length());
     }
 
-    private void registerUser() {
-        String fullName = fullNameInput.getText().toString();
-        String email = emailInput.getText().toString();
-        String phone = phoneInput.getText().toString();
-        String password = passwordInput.getText().toString();
-
-        // VALIDATIONS
-        if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Email format check
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailInput.setError("Invalid email format");
-            emailInput.requestFocus();
-            return;
-        }
-
-        // Password > 6 characters
-        if (password.length() < 6) {
-            passwordInput.setError("Password must be at least 6 characters");
-            passwordInput.requestFocus();
-            return;
-        }
-
-        // Start Firebase registration
+    private void registerUser(String name, String email, String phone, String password) {
+        // Create user in Firebase Auth
         auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-
                         String uid = auth.getCurrentUser().getUid();
-                        HashMap<String, Object> user = new HashMap<>();
-                        user.put("fullName", fullName);
-                        user.put("email", email);
-                        user.put("phone", phone);
 
-                        usersDB.child(uid).setValue(user)
-                                .addOnSuccessListener(aVoid -> {
-                                    Toast.makeText(RegisterActivity.this,
-                                            "Successfully register", Toast.LENGTH_SHORT).show();
-
-                                    startActivity(new Intent(RegisterActivity.this,
-                                            LoginActivity.class));
-                                    finish();
-                                });
-
+                        // Check for Role (First User Rule)
+                        determineRoleAndSave(uid, name, email, phone);
                     } else {
-                        Toast.makeText(RegisterActivity.this,
-                                "Registration failed: " + task.getException().getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(RegisterActivity.this, "Registration Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
-}
 
+    private void determineRoleAndSave(String uid, String name, String email, String phone) {
+        // Check if the "Users" collection is empty
+        firestore.collection("Users").limit(1).get()
+                .addOnSuccessListener(querySnapshot -> {
+                    String role;
+
+                    if (querySnapshot.isEmpty()) {
+                        // If NO users exist, this is the first one -> ADMIN
+                        role = "Admin";
+                    } else {
+                        // If users already exist, this is just another user -> STAFF
+                        role = "Staff";
+                    }
+
+                    saveUserToFirestore(uid, name, email, phone, role);
+                })
+                .addOnFailureListener(e -> {
+                    // In case of error checking, fail safe to Staff
+                    saveUserToFirestore(uid, name, email, phone, "Staff");
+                });
+    }
+
+    private void saveUserToFirestore(String uid, String name, String email, String phone, String role) {
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("fullName", name);
+        userMap.put("email", email);
+        userMap.put("phone", phone);
+        userMap.put("role", role);
+
+        firestore.collection("Users").document(uid).set(userMap)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(RegisterActivity.this, "Registered as " + role, Toast.LENGTH_LONG).show();
+
+                    // Go to Login Page
+                    startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(RegisterActivity.this, "Error saving profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+}

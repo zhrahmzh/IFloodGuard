@@ -2,48 +2,59 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5"
-    android:padding="16dp">
+    android:background="#F8F9FA"
+    android:padding="20dp">
 
-    <!-- Header -->
+    <!-- SPACER: Menolak kandungan ke bawah supaya tidak tertutup oleh status bar -->
+    <View
+        android:id="@+id/spacerTop"
+        android:layout_width="match_parent"
+        android:layout_height="40dp" />
+
+    <!-- HEADER TITLE -->
     <TextView
         android:id="@+id/tvHeader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Direktori Pihak Berkuasa"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:textColor="#333333"
+        android:layout_below="@id/spacerTop"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="20dp"/>
+        android:text="Direktori Pihak Berkuasa"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_dark"
+        android:layout_marginBottom="25dp"/>
 
-    <!-- The List -->
+    <!-- LIST (RECYCLERVIEW) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerResponders"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/tvHeader"
-        android:layout_marginBottom="70dp"/>
+        android:clipToPadding="false"
+        android:paddingBottom="80dp"/> <!-- Ruang untuk butang FAB -->
 
-    <!-- "Add New" Button -->
+    <!-- FLOATING ADD BUTTON (FAB) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddResponder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
-        android:layout_margin="16dp"
+        android:layout_margin="20dp"
         android:src="@android:drawable/ic_input_add"
-        android:backgroundTint="#D32F2F"
-        app:tint="#FFFFFF"
+        android:backgroundTint="@color/brand_orange"
+        app:tint="@color/white"
+        app:elevation="6dp"
         xmlns:app="http://schemas.android.com/apk/res-auto"/>
 
-    <!-- Empty State Text -->
+    <!-- EMPTY STATE MESSAGE -->
     <TextView
         android:id="@+id/tvEmptyResponders"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Tiada data. Sila tambah nombor."
+        android:text="Tiada data pihak berkuasa.\nTekan + untuk tambah."
+        android:textAlignment="center"
+        android:textColor="@color/text_grey"
         android:layout_centerInParent="true"
         android:visibility="gone"/>
 

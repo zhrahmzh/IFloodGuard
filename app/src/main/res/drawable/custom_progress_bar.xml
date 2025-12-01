@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Background (Empty Track) -->
+    <item android:id="@android:id/background">
+        <shape>
+            <corners android:radius="8dp"/>
+            <solid android:color="#E0E0E0"/> <!-- Light Grey -->
+        </shape>
+    </item>
+
+    <!-- Progress (Filled Part) -->
+    <item android:id="@android:id/progress">
+        <scale android:scaleWidth="100%">
+            <shape>
+                <corners android:radius="8dp"/>
+                <solid android:color="@color/brand_blue"/> <!-- Your Brand Blue -->
+            </shape>
+        </scale>
+    </item>
+
+</layer-list>

@@ -23,11 +23,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".LoginActivity" />
         <activity android:name=".RegisterActivity" />
+        <activity android:name=".LoginActivity" />
         <activity android:name=".HomePageActivity" />
         <activity android:name=".AlertHistoryActivity" />
         <activity android:name=".EmergencyContactActivity" />
+        <activity android:name=".ProfileUpdateActivity" />
 
         <!-- ADD THIS LINE BELOW TO FIX THE CRASH -->
         <activity android:name=".PPSListActivity" />

@@ -1,14 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:padding="30dp"
+    android:background="#FFFFFF">
 
+    <!-- Logo / Image -->
+    <ImageView
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:src="@drawable/app_logo"
+        android:layout_marginBottom="30dp"/>
+
+    <!-- Title -->
     <TextView
-        android:text="Welcome to IFloodGuard"
-        android:textSize="26sp"
-        android:textStyle="bold"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:text="Welcome to\nIFloodGuard"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textAlignment="center"
+        android:textColor="#1565C0"
+        android:layout_marginBottom="10dp"/>
+
+    <!-- Subtitle -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Real-time flood monitoring and evacuation management system."
+        android:textSize="16sp"
+        android:textAlignment="center"
+        android:textColor="#757575"
+        android:layout_marginBottom="50dp"/>
+
+    <!-- BUTTON (This is the one causing the error) -->
+    <Button
+        android:id="@+id/btnGetStarted"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Get Started"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:backgroundTint="#1565C0"
+        android:textColor="#FFFFFF"/>
+
 </LinearLayout>
