@@ -2,12 +2,21 @@ package com.example.project_ifloodguard;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -29,64 +38,149 @@ public class AlertHistoryActivity extends AppCompatActivity {
 
     RecyclerView recyclerView;
     HistoryAdapter adapter;
-    List<HistoryModel> list;
+    List<HistoryModel> fullList, displayedList;
     DatabaseReference dbRef;
+
+    EditText searchInput;
+    TextView tvEmpty;
+    String userRole = "Staff"; // Default
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.content_alert_history);
-        // Inside onCreate...
+        setContentView(R.layout.content_alert_history); // Make sure XML name matches Step 1
 
-        // 1. Find the back button
-        android.widget.ImageView btnBack = findViewById(R.id.btnBack);
+        if (getIntent().hasExtra("USER_ROLE")) {
+            userRole = getIntent().getStringExtra("USER_ROLE");
+        }
 
-        // 2. Set the click listener to close the page
-        btnBack.setOnClickListener(v -> finish());
-
-        recyclerView = findViewById(R.id.recyclerHistory);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        list = new ArrayList<>();
-        adapter = new HistoryAdapter(list);
-        recyclerView.setAdapter(adapter);
-
-        // Connect to "waterLevelHistory" node
+        // 1. Setup Firebase
         dbRef = FirebaseDatabase
                 .getInstance("https://ifloodguard-default-rtdb.asia-southeast1.firebasedatabase.app/")
                 .getReference("waterLevelHistory");
 
+        // 2. Init UI
+        tvEmpty = findViewById(R.id.tvEmptyHistory);
+        searchInput = findViewById(R.id.etSearchHistory);
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+
+        // 3. Search Bar Logic (Keyboard & Touch)
+        searchInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                hideKeyboard();
+                return true;
+            }
+            return false;
+        });
+
+        searchInput.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (event.getRawX() >= (searchInput.getRight() - searchInput.getCompoundDrawables()[2].getBounds().width())) {
+                    hideKeyboard();
+                    return true;
+                }
+            }
+            return false;
+        });
+
+        searchInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filter(s.toString());
+            }
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        // 4. Setup List
+        recyclerView = findViewById(R.id.recyclerHistory);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        fullList = new ArrayList<>();
+        displayedList = new ArrayList<>();
+        adapter = new HistoryAdapter(displayedList);
+        recyclerView.setAdapter(adapter);
+
+        loadHistory();
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (imm != null) imm.hideSoftInputFromWindow(searchInput.getWindowToken(), 0);
+    }
+
+    private void loadHistory() {
         // Load last 50 records
         dbRef.limitToLast(50).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                list.clear();
+                fullList.clear();
                 for (DataSnapshot shot : snapshot.getChildren()) {
                     Double dist = shot.child("distance").getValue(Double.class);
                     String status = shot.child("status").getValue(String.class);
                     Long time = shot.child("timestamp").getValue(Long.class);
 
                     if (dist != null && status != null) {
-                        list.add(new HistoryModel(status, dist, time));
+                        // Store the Key ID so we can delete it later
+                        fullList.add(new HistoryModel(shot.getKey(), status, dist, time));
                     }
                 }
-                // Reverse list to show newest first
-                Collections.reverse(list);
-                adapter.notifyDataSetChanged();
-            }
+                // Reverse list to show Newest First
+                Collections.reverse(fullList);
 
+                filter(searchInput.getText().toString());
+            }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
-    // --- DATA MODEL ---
+    private void filter(String keyword) {
+        displayedList.clear();
+        String search = keyword.toLowerCase().trim();
+
+        for (HistoryModel item : fullList) {
+            // Convert Timestamp to readable date for searching
+            String dateString = "";
+            if (item.timestamp != null) {
+                Date date = new Date(item.timestamp * 1000L);
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                dateString = sdf.format(date).toLowerCase();
+            }
+
+            // Search by Status (DANGER) or Date
+            if (item.status.toLowerCase().contains(search) || dateString.contains(search)) {
+                displayedList.add(item);
+            }
+        }
+        adapter.notifyDataSetChanged();
+        tvEmpty.setVisibility(displayedList.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    // --- DELETE CONFIRMATION ---
+    private void showDeleteDialog(HistoryModel model) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Record?")
+                .setMessage("Are you sure you want to delete this record?")
+                .setPositiveButton("Yes, Delete", (dialog, which) -> {
+                    dbRef.child(model.id).removeValue();
+                    Toast.makeText(this, "Record Deleted", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    // --- MODEL ---
     public static class HistoryModel {
+        String id; // Added ID for deletion
         String status;
         Double distance;
         Long timestamp;
 
-        public HistoryModel(String status, Double distance, Long timestamp) {
+        public HistoryModel(String id, String status, Double distance, Long timestamp) {
+            this.id = id;
             this.status = status;
             this.distance = distance;
             this.timestamp = timestamp;
@@ -112,9 +206,7 @@ public class AlertHistoryActivity extends AppCompatActivity {
             holder.tvStatus.setText(item.status);
             holder.tvLevel.setText(String.format(Locale.US, "%.2f cm", item.distance));
 
-            // Inside onBindViewHolder
             if (item.timestamp != null) {
-                // FIX: Multiply by 1000L (L ensures it handles the math as Long)
                 Date date = new Date(item.timestamp * 1000L);
                 SimpleDateFormat sdf = new SimpleDateFormat("dd/MM HH:mm", Locale.getDefault());
                 holder.tvTime.setText(sdf.format(date));
@@ -133,6 +225,14 @@ public class AlertHistoryActivity extends AppCompatActivity {
                 holder.colorBar.setBackgroundColor(Color.parseColor("#4CAF50")); // Green
                 holder.tvStatus.setTextColor(Color.parseColor("#4CAF50"));
             }
+
+            // Role Logic: Only Admin can delete
+            if ("Admin".equals(userRole)) {
+                holder.btnDelete.setVisibility(View.VISIBLE);
+                holder.btnDelete.setOnClickListener(v -> showDeleteDialog(item));
+            } else {
+                holder.btnDelete.setVisibility(View.GONE);
+            }
         }
 
         @Override
@@ -141,12 +241,14 @@ public class AlertHistoryActivity extends AppCompatActivity {
         class ViewHolder extends RecyclerView.ViewHolder {
             TextView tvStatus, tvLevel, tvTime;
             View colorBar;
+            ImageView btnDelete; // Added Delete Button
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 tvStatus = itemView.findViewById(R.id.tvHistoryStatus);
                 tvLevel = itemView.findViewById(R.id.tvHistoryLevel);
                 tvTime = itemView.findViewById(R.id.tvHistoryTime);
                 colorBar = itemView.findViewById(R.id.viewStatusColor);
+                btnDelete = itemView.findViewById(R.id.btnDeleteHistory); // Matches XML ID
             }
         }
     }

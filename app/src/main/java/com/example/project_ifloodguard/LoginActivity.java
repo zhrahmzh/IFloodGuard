@@ -14,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -78,21 +80,45 @@ public class LoginActivity extends AppCompatActivity {
         String email = emailInput.getText().toString().trim();
         String password = passwordInput.getText().toString().trim();
 
+        // 1. Basic Checks
         if (email.isEmpty()) {
             emailInput.setError("Email is required");
+            emailInput.requestFocus();
             return;
         }
         if (password.isEmpty()) {
             passwordInput.setError("Password is required");
+            passwordInput.requestFocus();
             return;
         }
 
+        // 2. Attempt Login
         auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
+                        // Login Success -> Check Role
                         checkUserRole(auth.getCurrentUser().getUid());
                     } else {
-                        Toast.makeText(LoginActivity.this, "Login Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        // Login Failed -> HANDLE ERRORS CLEANLY
+                        try {
+                            throw task.getException();
+                        }
+                        // Case 1: Email does not exist
+                        catch (FirebaseAuthInvalidUserException e) {
+                            emailInput.setError("User not found");
+                            emailInput.requestFocus();
+                        }
+                        // Case 2: Wrong Password
+                        catch (FirebaseAuthInvalidCredentialsException e) {
+                            passwordInput.setError("Invalid Password");
+                            passwordInput.requestFocus();
+                        }
+                        // Case 3: Any other error (Network, etc.)
+                        catch (Exception e) {
+                            // ⭐ CRITICAL FIX: Do NOT use e.getMessage() here.
+                            // Just show a simple text so it doesn't look messy.
+                            Toast.makeText(LoginActivity.this, "Login Failed. Please try again.", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
     }

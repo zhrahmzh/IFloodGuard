@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.MotionEvent; // Don't forget this import!
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -69,8 +70,30 @@ public class EmergencyContactActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerResponders);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         tvEmpty = findViewById(R.id.tvEmptyResponders);
+
         searchInput = findViewById(R.id.etSearchResponder);
         chipGroup = findViewById(R.id.chipGroupResponders);
+
+        // ⭐ 1. KEYBOARD SEARCH BUTTON ⭐
+        searchInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                hideKeyboard();
+                return true;
+            }
+            return false;
+        });
+
+        // ⭐ 2. ICON CLICK LISTENER (Right Side) ⭐
+        searchInput.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                // Check if touch is on the Right Side
+                if (event.getRawX() >= (searchInput.getRight() - searchInput.getCompoundDrawables()[2].getBounds().width())) {
+                    hideKeyboard();
+                    return true;
+                }
+            }
+            return false;
+        });
 
         // 3. Initialize Lists
         fullList = new ArrayList<>();
@@ -109,11 +132,17 @@ public class EmergencyContactActivity extends AppCompatActivity {
             }
         });
 
-        // REMOVED DUPLICATE FAB CODE HERE
-
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
         loadData();
+    }
+
+    // ⭐ HELPER TO HIDE KEYBOARD ⭐
+    private void hideKeyboard() {
+        android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(searchInput.getWindowToken(), 0);
+        }
     }
 
     private void loadData() {
@@ -269,19 +298,12 @@ public class EmergencyContactActivity extends AppCompatActivity {
             holder.tvType.setText(item.type);
             holder.tvPhone.setText(item.phone);
 
-            // DEBUG: Print the exact role the Adapter sees
-            System.out.println("ADAPTER ROLE CHECK: " + userRole);
-
-            // --- STRICT ROLE LOGIC ---
-            // 1. Check if userRole is not null
-            // 2. Trim spaces (e.g. "Admin " becomes "Admin")
-            // 3. Ignore case (e.g. "admin" works same as "Admin")
-            if (userRole != null && userRole.trim().equalsIgnoreCase("Admin")) {
-
-                // --- ADMIN SETTINGS ---
+            // --- ROLE LOGIC ---
+            if ("Admin".equals(userRole)) {
+                // ADMIN: Can Click Row to Edit AND Can Call
                 holder.itemView.setOnClickListener(v -> showUpdateDialog(item));
 
-                holder.btnCall.setVisibility(View.VISIBLE); // SHOW Button
+                holder.btnCall.setVisibility(View.VISIBLE); // Show Call Button
                 holder.btnCall.setOnClickListener(v -> {
                     Intent intent = new Intent(Intent.ACTION_DIAL);
                     intent.setData(Uri.parse("tel:" + item.phone));
@@ -289,12 +311,11 @@ public class EmergencyContactActivity extends AppCompatActivity {
                 });
 
             } else {
-
-                // --- STAFF SETTINGS ---
+                // STAFF: Cannot Click Row AND Cannot Call
                 holder.itemView.setOnClickListener(null);
                 holder.itemView.setClickable(false);
 
-                holder.btnCall.setVisibility(View.GONE); // HIDE Button
+                holder.btnCall.setVisibility(View.GONE); // Hide Call Button completely
                 holder.btnCall.setOnClickListener(null);
             }
         }

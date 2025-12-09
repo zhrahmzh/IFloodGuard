@@ -14,29 +14,24 @@
         android:orientation="horizontal"
         android:background="@android:color/white">
 
-        <!-- STATUS COLOR BAR (Left Indicator) -->
-        <!-- This view changes color (Green/Orange/Red) based on status -->
         <View
             android:id="@+id/viewStatusColor"
             android:layout_width="8dp"
             android:layout_height="match_parent"
             android:background="#4CAF50"/>
 
-        <!-- CONTENT CONTAINER -->
-        <LinearLayout
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- ROW 1: STATUS & TIME -->
             <LinearLayout
+                android:id="@+id/topRow"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:layout_toStartOf="@+id/btnDeleteHistory"
+                android:orientation="horizontal">
 
-                <!-- STATUS TEXT (e.g., NORMAL) -->
                 <TextView
                     android:id="@+id/tvHistoryStatus"
                     android:layout_width="0dp"
@@ -47,7 +42,6 @@
                     android:textSize="16sp"
                     android:textColor="#212121"/>
 
-                <!-- TIMESTAMP (e.g., 10:30 AM) -->
                 <TextView
                     android:id="@+id/tvHistoryTime"
                     android:layout_width="wrap_content"
@@ -58,12 +52,12 @@
                     android:textColor="#757575"/>
             </LinearLayout>
 
-            <!-- ROW 2: WATER LEVEL DETAILS -->
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="6dp">
+                android:layout_below="@id/topRow"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -72,7 +66,6 @@
                     android:textSize="14sp"
                     android:textColor="#757575"/>
 
-                <!-- LEVEL VALUE (e.g., 808.03 cm) -->
                 <TextView
                     android:id="@+id/tvHistoryLevel"
                     android:layout_width="wrap_content"
@@ -84,7 +77,14 @@
                     android:layout_marginStart="4dp"/>
             </LinearLayout>
 
-        </LinearLayout>
-
+            <ImageView
+                android:id="@+id/btnDeleteHistory"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@android:drawable/ic_menu_delete"
+                app:tint="#D32F2F"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:visibility="gone"/> </RelativeLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

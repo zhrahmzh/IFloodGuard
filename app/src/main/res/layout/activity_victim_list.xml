@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="30dp"
+        android:background="#1565C0"
+        android:gravity="center_vertical"
+        android:paddingStart="15dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/fixed_back_icon"
+            app:tint="#FFFFFF"/>
+
+        <TextView
+            android:id="@+id/tvCenterTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Victim List"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginStart="15dp"/>
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/etSearchVictim"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_below="@id/header"
+        android:layout_margin="10dp"
+        android:background="#FFFFFF"
+        android:elevation="2dp"
+        android:hint="Search by Name or IC..."
+
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
+
+        android:drawableEnd="@android:drawable/ic_menu_search"
+        android:drawableTint="#1565C0"
+
+        android:imeOptions="actionSearch"
+        android:inputType="text" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerVictims"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/etSearchVictim"
+        android:paddingBottom="80dp"
+        android:clipToPadding="false"/>
+
+    <TextView
+        android:id="@+id/tvEmptyVictims"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No victims registered yet."
+        android:layout_centerInParent="true"
+        android:textSize="16sp"
+        android:textColor="#9E9E9E"
+        android:visibility="gone"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddVictim"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="20dp"
+        android:src="@android:drawable/ic_input_add"
+        android:backgroundTint="#1565C0"
+        app:tint="#FFFFFF"/>
+
+</RelativeLayout>

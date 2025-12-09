@@ -22,7 +22,7 @@ public class WelcomeActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // CORRECT FLOW: Go directly to Login
-                Intent intent = new Intent(WelcomeActivity.this, RegisterActivity.class);
+                Intent intent = new Intent(WelcomeActivity.this, LoginActivity.class);
                 startActivity(intent);
                 finish(); // Close welcome screen so back button doesn't return here
             }
