@@ -1,59 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.drawerlayout.widget.DrawerLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F8F9FA"
     android:fitsSystemWindows="true"
     tools:context=".HomePageActivity">
 
-    <!--
-      NOTA: 'android:fitsSystemWindows="true"' di atas adalah kuncinya.
-      Ia memberitahu Android untuk menambah 'padding' automatik
-      supaya Toolbar tidak tertutup oleh Status Bar.
-    -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#1565C0"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+        android:layout_alignParentTop="true"/>
 
-    <!-- MAIN CONTENT AREA -->
-    <LinearLayout
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#FFFFFF"
+        app:menu="@menu/bottom_nav_menu"
+
+        app:itemIconTint="@color/bottom_nav_color_state"  app:itemTextColor="@color/bottom_nav_color_state"  app:elevation="8dp"/>
+
+    <FrameLayout
+        android:id="@+id/content_frame"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_below="@id/toolbar"
+        android:layout_above="@id/bottom_navigation"/>
 
-        <!-- Toolbar -->
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="#1565C0"
-            android:elevation="4dp"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
-
-        <!-- Container for Dashboard -->
-        <FrameLayout
-            android:id="@+id/content_frame"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-    </LinearLayout>
-
-    <!-- SLIDER MENU -->
-    <com.google.android.material.navigation.NavigationView
-        android:id="@+id/nav_view"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:fitsSystemWindows="true"
-
-        app:headerLayout="@layout/nav_header"
-        app:menu="@menu/drawer_menu"
-    app:itemTextAppearance="@style/NavDrawerTextStyle"
-    app:itemIconSize="28dp"
-    app:itemHorizontalPadding="24dp"
-    app:itemIconPadding="24dp"
-    app:itemShapeFillColor="#E3F2FD"
-    />
-
-</androidx.drawerlayout.widget.DrawerLayout>
+</RelativeLayout>

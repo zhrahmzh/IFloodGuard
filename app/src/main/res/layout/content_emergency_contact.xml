@@ -1,39 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FA"
-    android:padding="20dp">
+    android:background="#F8F9FA">
 
-    <!-- SPACER: Menolak kandungan ke bawah supaya tidak tertutup oleh status bar -->
-    <View
-        android:id="@+id/spacerTop"
+    <RelativeLayout
+        android:id="@+id/headerContainer"
         android:layout_width="match_parent"
-        android:layout_height="40dp" />
-
-    <!-- HEADER TITLE -->
-    <TextView
-        android:id="@+id/tvHeader"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/spacerTop"
-        android:layout_centerHorizontal="true"
-        android:text="Direktori Pihak Berkuasa"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_dark"
-        android:layout_marginBottom="25dp"/>
+        android:background="#1565C0"
+        android:paddingVertical="20dp"
+        android:paddingHorizontal="20dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="30dp">
 
-    <!-- LIST (RECYCLERVIEW) -->
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/fixed_back_icon"
+            app:tint="#FFFFFF"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless"/>
+
+        <TextView
+            android:id="@+id/tvHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Authorities"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif-medium"
+            android:layout_centerInParent="true"/>
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/filter_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_below="@id/headerContainer"
+        android:paddingTop="16dp"
+        android:paddingHorizontal="16dp"
+        android:background="#FFFFFF"
+        android:elevation="4dp">
+
+        <EditText
+            android:id="@+id/etSearchResponder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Search name (e.g. Hospital)"
+            android:padding="12dp"
+            android:drawableStart="@drawable/fixed_search_icon"            android:drawablePadding="8dp"
+            android:background="@drawable/rounded_search_background"
+            android:layout_marginBottom="12dp"/>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupResponders"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="All"
+                    android:checked="true"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipPolice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Police"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFire"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Fire"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipHospital"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hospital"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipCenter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Center"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"/>
+
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerResponders"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/tvHeader"
+        android:layout_below="@id/filter_container"
+        android:padding="16dp"
         android:clipToPadding="false"
-        android:paddingBottom="80dp"/> <!-- Ruang untuk butang FAB -->
+        android:paddingBottom="80dp"/>
 
-    <!-- FLOATING ADD BUTTON (FAB) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddResponder"
         android:layout_width="wrap_content"
@@ -42,19 +130,15 @@
         android:layout_alignParentEnd="true"
         android:layout_margin="20dp"
         android:src="@android:drawable/ic_input_add"
-        android:backgroundTint="@color/brand_orange"
-        app:tint="@color/white"
-        app:elevation="6dp"
-        xmlns:app="http://schemas.android.com/apk/res-auto"/>
+        android:backgroundTint="#FF9800"
+        app:tint="#FFFFFF"/>
 
-    <!-- EMPTY STATE MESSAGE -->
     <TextView
         android:id="@+id/tvEmptyResponders"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Tiada data pihak berkuasa.\nTekan + untuk tambah."
-        android:textAlignment="center"
-        android:textColor="@color/text_grey"
+        android:text="No authorities found."
+        android:textColor="#757575"
         android:layout_centerInParent="true"
         android:visibility="gone"/>
 

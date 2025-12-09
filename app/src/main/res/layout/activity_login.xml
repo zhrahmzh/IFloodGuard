@@ -60,25 +60,40 @@
 
     <Button
         android:id="@+id/loginButton"
-        android:text="Login"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="30dp"
+        android:text="Login"
+        android:textSize="18sp"
+        android:textStyle="bold"
         android:backgroundTint="#1565C0"
-        android:textStyle="bold"
-        android:textColor="@android:color/white"
-        android:padding="12dp"/>
+        android:textColor="#FFFFFF"/>
 
-    <TextView
-        android:id="@+id/registerRedirect"
-        android:text="Don't have an account? Register"
-        android:textColor="#1565C0"
-        android:textStyle="bold"
-        android:clickable="true"
-        android:focusable="true"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="20dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginTop="25dp">
+
+        <TextView
+            android:id="@+id/registerRedirect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Don't have an account? Register"
+            android:textSize="15sp"
+            android:textColor="#1565C0"
+            android:textStyle="bold"
+            android:layout_marginBottom="15dp"/>
+
+        <TextView
+            android:id="@+id/forgotPassword"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Forgot Password?"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#1565C0" />
+    </LinearLayout>
 
 </LinearLayout>

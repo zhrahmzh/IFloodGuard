@@ -23,8 +23,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".RegisterActivity" />
-        <activity android:name=".LoginActivity" />
+
+        <activity
+            android:name=".RegisterActivity"
+            android:windowSoftInputMode="stateHidden|adjustPan" />
+
+        <activity
+            android:name=".LoginActivity"
+            android:windowSoftInputMode="stateHidden|adjustPan" />
+
+        <activity android:name=".ForgotPasswordActivity" />
+
         <activity android:name=".HomePageActivity" />
         <activity android:name=".AlertHistoryActivity" />
         <activity android:name=".EmergencyContactActivity" />
@@ -35,6 +44,7 @@
 
         <!-- Also check if your sensor activity is here -->
         <activity android:name=".WaterLevelStatusActivity" />
+        <activity android:name=".SettingsActivity" />
 
     </application>
 

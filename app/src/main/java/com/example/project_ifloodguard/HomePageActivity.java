@@ -14,14 +14,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
+import androidx.activity.OnBackPressedCallback;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
 
-import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -36,12 +36,7 @@ import java.util.Locale;
 public class HomePageActivity extends AppCompatActivity {
 
     // --- UI Variables ---
-    DrawerLayout drawerLayout;
-    NavigationView navView;
-    ActionBarDrawerToggle toggle;
     FrameLayout contentFrame;
-
-    // --- Dashboard Variables ---
     TextView tvHomeLevel, tvHomeStatus, tvHomeTime, tvHomeLocation;
 
     // --- Firebase & Notifications ---
@@ -50,14 +45,14 @@ public class HomePageActivity extends AppCompatActivity {
     private String lastKnownStatus = "NORMAL";
 
     // --- User Role ---
-    String userRole = "Staff"; // Default
+    String userRole = "Staff"; // Default to Staff for safety
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_homepage);
 
-        // 1. Get Role
+        // 1. Get Role from Login Activity
         if (getIntent().hasExtra("USER_ROLE")) {
             userRole = getIntent().getStringExtra("USER_ROLE");
         }
@@ -66,40 +61,108 @@ public class HomePageActivity extends AppCompatActivity {
         createNotificationChannel();
         checkPermission();
 
-        // 3. Setup Navigation Drawer
-        drawerLayout = findViewById(R.id.drawer_layout);
-        navView = findViewById(R.id.nav_view);
+        // 3. Setup Toolbar
         contentFrame = findViewById(R.id.content_frame);
         androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Home");
 
-        toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
-
-        // 4. Firebase Connection
+        // 4. Firebase Connection (Realtime Database for IoT Data)
         dbRef = FirebaseDatabase
                 .getInstance("https://ifloodguard-default-rtdb.asia-southeast1.firebasedatabase.app/")
                 .getReference("waterLevel");
 
-        // 5. Load Layout
+        // 5. Load Layout & Views
         loadFragment(R.layout.content_home_page);
-
-        // 6. Connect Buttons & Apply Role Rules
         refreshHomeViews();
-
-        // 7. Start Listening
         startFirebaseListener();
 
-        // 8. Navigation Listener
-        navView.setNavigationItemSelectedListener(item -> {
-            handleNavigation(item);
-            return true;
+        // 6. SETUP BOTTOM NAVIGATION
+        setupBottomNavigation();
+
+        // 7. HANDLE BACK BUTTON
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                showLogoutConfirmation();
+            }
         });
     }
 
-    // --- LISTENING TO IOT DATA ---
+    // --- LOGOUT CONFIRMATION POPUP ---
+    private void showLogoutConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("Logout")
+                .setMessage("Are you sure want to logout?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    performLogout();
+                })
+                .setNegativeButton("No", (dialog, which) -> {
+                    dialog.dismiss();
+                })
+                .show();
+    }
+
+    // --- PERFORM LOGOUT LOGIC ---
+    private void performLogout() {
+        FirebaseAuth.getInstance().signOut();
+        Toast.makeText(this, "Logged Out", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, LoginActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    // --- BOTTOM NAVIGATION LOGIC ---
+    private void setupBottomNavigation() {
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.bottom_home);
+
+            bottomNav.setOnItemSelectedListener(item -> {
+                int id = item.getItemId();
+
+                if (id == R.id.bottom_home) {
+                    return true;
+                }
+                else if (id == R.id.bottom_pps) {
+                    Intent intent = new Intent(HomePageActivity.this, PPSListActivity.class);
+                    intent.putExtra("USER_ROLE", userRole); // Pass Role
+                    startActivity(intent);
+                    return true;
+                }
+                else if (id == R.id.bottom_history) {
+                    Intent intent = new Intent(HomePageActivity.this, AlertHistoryActivity.class);
+                    intent.putExtra("USER_ROLE", userRole); // Pass Role
+                    startActivity(intent);
+                    return true;
+                }
+                return false;
+            });
+        }
+    }
+
+    // --- TOOLBAR SETTINGS MENU LOGIC ---
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_settings_icon) {
+            // Open the Settings Page
+            Intent intent = new Intent(HomePageActivity.this, SettingsActivity.class);
+            startActivity(intent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    // --- HELPER FUNCTIONS ---
+
     private void startFirebaseListener() {
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -152,79 +215,55 @@ public class HomePageActivity extends AppCompatActivity {
         });
     }
 
-    // --- UI HELPER: CONNECTING BUTTONS & RESTRICTING STAFF ---
+    @Override
+    protected void onResume() {
+        super.onResume();
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.bottom_home);
+        }
+    }
+
+    // --- FIX: Cleaned up this method ---
     private void refreshHomeViews() {
+        // 1. Find the existing views
         tvHomeLevel = findViewById(R.id.tvHomeLevel);
         tvHomeStatus = findViewById(R.id.tvHomeStatus);
         tvHomeTime = findViewById(R.id.tvHomeTime);
         tvHomeLocation = findViewById(R.id.tvHomeLocation);
 
-        View btnPPS = findViewById(R.id.btnQuickPPS);
+        // 2. Find the Emergency Section Views
         View btnContacts = findViewById(R.id.btnQuickContacts);
-        View btnHistory = findViewById(R.id.btnQuickHistory);
-
-        // --- NEW LOGIC: HIDE BUTTONS FOR STAFF ---
-        if (userRole.equalsIgnoreCase("Staff")) {
-            // Staff sees ONLY History
-            if (btnPPS != null) btnPPS.setVisibility(View.GONE);
-            if (btnContacts != null) btnContacts.setVisibility(View.GONE);
-            if (btnHistory != null) btnHistory.setVisibility(View.VISIBLE);
-        } else {
-            // Admin sees EVERYTHING
-            if (btnPPS != null) btnPPS.setVisibility(View.VISIBLE);
-            if (btnContacts != null) btnContacts.setVisibility(View.VISIBLE);
-            if (btnHistory != null) btnHistory.setVisibility(View.VISIBLE);
-        }
-
-        // Set Click Listeners
-        if (btnPPS != null) {
-            btnPPS.setOnClickListener(v -> {
-                Intent intent = new Intent(HomePageActivity.this, PPSListActivity.class);
-                intent.putExtra("USER_ROLE", userRole);
-                startActivity(intent);
-            });
-        }
+        TextView tvEmergencyHeader = findViewById(R.id.tvEmergencyHeader); // <--- Matches the ID from Step 1
 
         if (btnContacts != null) {
-            btnContacts.setOnClickListener(v -> {
-                Intent intent = new Intent(HomePageActivity.this, EmergencyContactActivity.class);
-                intent.putExtra("USER_ROLE", userRole);
-                startActivity(intent);
-            });
+
+            // ⭐ LOGIC: HIDE FOR STAFF, SHOW FOR ADMIN ⭐
+            if ("Staff".equals(userRole)) {
+
+                // Hide the Button
+                btnContacts.setVisibility(View.GONE);
+
+                // Hide the Title Text "Emergency Action"
+                if (tvEmergencyHeader != null) {
+                    tvEmergencyHeader.setVisibility(View.GONE);
+                }
+
+            } else {
+                // Show for Admin
+                btnContacts.setVisibility(View.VISIBLE);
+
+                if (tvEmergencyHeader != null) {
+                    tvEmergencyHeader.setVisibility(View.VISIBLE);
+                }
+
+                btnContacts.setOnClickListener(v -> {
+                    Intent intent = new Intent(HomePageActivity.this, EmergencyContactActivity.class);
+                    intent.putExtra("USER_ROLE", userRole);
+                    startActivity(intent);
+                });
+            }
         }
-
-        if (btnHistory != null) {
-            btnHistory.setOnClickListener(v -> {
-                Intent intent = new Intent(HomePageActivity.this, AlertHistoryActivity.class);
-                intent.putExtra("USER_ROLE", userRole);
-                startActivity(intent);
-            });
-        }
-    }
-
-    private void handleNavigation(MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.nav_home) {
-            getSupportActionBar().setTitle("Home");
-            loadFragment(R.layout.content_home_page);
-            refreshHomeViews();
-
-        } else if (id == R.id.nav_profile) {
-            getSupportActionBar().setTitle("My Profile");
-            Intent intent = new Intent(this, ProfileUpdateActivity.class);
-            intent.putExtra("USER_ROLE", userRole);
-            startActivity(intent);
-
-        } else if (id == R.id.nav_logout) {
-            FirebaseAuth.getInstance().signOut();
-            Toast.makeText(this, "Logged Out", Toast.LENGTH_SHORT).show();
-            Intent intent = new Intent(this, LoginActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
-        }
-        drawerLayout.closeDrawers();
     }
 
     private void loadFragment(int layoutResId) {

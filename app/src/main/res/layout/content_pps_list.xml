@@ -15,22 +15,23 @@
         android:layout_alignParentTop="true"
         android:layout_marginTop="30dp">
 
-    <ImageView
+        <ImageView
             android:id="@+id/btnBack"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:src="@drawable/left"
+            android:src="@drawable/fixed_back_icon"
             app:tint="#FFFFFF"
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
             android:clickable="true"
             android:focusable="true"
             android:background="?attr/selectableItemBackgroundBorderless"/>
+
         <TextView
             android:id="@+id/tvHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Evacuation Center\nManagement"
+            android:text="Temporary Evacuation\nCenter Management"
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#FFFFFF"
@@ -39,11 +40,35 @@
             android:fontFamily="sans-serif-medium"/>
     </RelativeLayout>
 
+    <LinearLayout
+        android:id="@+id/search_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_below="@id/headerContainer"
+        android:paddingTop="16dp"
+        android:paddingHorizontal="16dp"
+        android:background="#FFFFFF"
+        android:elevation="4dp">
+
+        <EditText
+            android:id="@+id/etSearchPPS"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Search center by name..."
+            android:padding="12dp"
+            android:drawableStart="@drawable/fixed_search_icon"
+            android:drawablePadding="8dp"
+            android:background="@drawable/rounded_search_background"
+            android:layout_marginBottom="16dp"/>
+
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewPPS"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/headerContainer"
+        android:layout_below="@id/search_container"
         android:padding="16dp"
         android:clipToPadding="false"
         android:paddingBottom="80dp"/>

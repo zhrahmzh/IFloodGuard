@@ -21,6 +21,7 @@ public class LoginActivity extends AppCompatActivity {
     Button loginButton;
     ImageView eyeIcon;
     TextView registerRedirect; // <--- 1. ADD THIS VARIABLE
+    TextView forgotPassword;
 
     boolean passwordVisible = false;
     FirebaseAuth auth;
@@ -36,8 +37,7 @@ public class LoginActivity extends AppCompatActivity {
         passwordInput = findViewById(R.id.passwordInput);
         loginButton = findViewById(R.id.loginButton);
         eyeIcon = findViewById(R.id.eyeIcon);
-
-        // <--- 2. CONNECT THE REGISTER LINK
+        forgotPassword = findViewById(R.id.forgotPassword);
         registerRedirect = findViewById(R.id.registerRedirect);
 
         // Init Firebase
@@ -48,10 +48,16 @@ public class LoginActivity extends AppCompatActivity {
         eyeIcon.setOnClickListener(v -> togglePasswordVisibility());
         loginButton.setOnClickListener(v -> loginUser());
 
-        // <--- 3. ADD THE CLICK ACTION
+        // --- 1. REGISTER BUTTON (Fixed) ---
         registerRedirect.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
-            finish();
+            finish(); // Closes Login page so user can't go back easily
+        }); // <--- NOTICE: This closes here!
+
+        // --- 2. FORGOT PASSWORD BUTTON (Fixed) ---
+        forgotPassword.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
+            startActivity(intent);
         });
     }
 
