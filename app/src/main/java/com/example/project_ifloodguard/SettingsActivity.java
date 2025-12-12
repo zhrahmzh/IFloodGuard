@@ -6,7 +6,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,39 +19,35 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        // 1. Setup Back Button
+        // 1. Back Button
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
-        // 2. Setup "Update Details" Row
+        // 2. "Update Details" Row
         View rowUpdate = findViewById(R.id.row_update_details);
-        setupRow(rowUpdate, "Update Details", android.R.drawable.ic_menu_edit);
+        setupRow(rowUpdate, "Update Profile", android.R.drawable.ic_menu_edit);
         rowUpdate.setOnClickListener(v -> {
-            Intent intent = new Intent(SettingsActivity.this, ProfileUpdateActivity.class);
-            // Pass role if needed, or fetch it again in ProfileUpdate
-            startActivity(intent);
+            startActivity(new Intent(SettingsActivity.this, ProfileUpdateActivity.class));
         });
 
-        // 3. Setup "Change Password" Row
+        // 3. "Change Password" Row (Converted to Row for consistency)
         View rowPass = findViewById(R.id.row_change_password);
-        setupRow(rowPass, "Change Password", android.R.drawable.ic_lock_lock);
+        setupRow(rowPass, "Change Password", android.R.drawable.ic_lock_lock); // Lock Icon
         rowPass.setOnClickListener(v -> {
-            Toast.makeText(this, "Change Password clicked", Toast.LENGTH_SHORT).show();
-            // Intent intent = new Intent(SettingsActivity.this, ChangePasswordActivity.class);
-            // startActivity(intent);
+            startActivity(new Intent(SettingsActivity.this, ChangePasswordActivity.class));
         });
 
-        // 4. Setup Logout Button
+        // 4. Logout Button (Red button at bottom)
         Button btnLogout = findViewById(R.id.btnLogout);
         btnLogout.setOnClickListener(v -> showLogoutConfirmation());
     }
 
-    // Helper method to set text and icon for the included rows
+    // Helper to set text/icon for standard rows
     private void setupRow(View view, String title, int iconResId) {
         TextView text = view.findViewById(R.id.item_text);
         ImageView icon = view.findViewById(R.id.item_icon);
 
-        text.setText(title);
-        icon.setImageResource(iconResId);
+        if(text != null) text.setText(title);
+        if(icon != null) icon.setImageResource(iconResId);
     }
 
     private void showLogoutConfirmation() {

@@ -1,127 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FA"
-    android:fitsSystemWindows="true">
+    android:background="#F5F5F5">
 
-    <RelativeLayout
-    android:id="@+id/settings_header"
-    android:layout_width="match_parent"
-    android:layout_height="?attr/actionBarSize"
-    android:background="@android:color/white"
-    android:elevation="2dp">
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="50dp"
+        android:background="#1565C0"
+        android:gravity="center_vertical"
+        android:paddingStart="15dp">
 
         <ImageView
             android:id="@+id/btnBack"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:src="@drawable/fixed_back_icon"
-            app:tint="@android:color/black"
-            android:layout_centerVertical="true"
-            android:clickable="true"
-            android:focusable="true"/>
+            app:tint="#FFFFFF"
+            xmlns:app="http://schemas.android.com/apk/res-auto"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Setting"
+            android:text="Settings"
+            android:textColor="#FFFFFF"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_centerInParent="true"/>
-    </RelativeLayout>
+            android:layout_marginStart="15dp"/>
+    </LinearLayout>
 
-    <ScrollView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/settings_header"
-        android:fitsSystemWindows="true"
-        android:padding="16dp">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_below="@id/header"
+        android:layout_marginTop="20dp"
+        android:background="#FFFFFF"
+        android:elevation="2dp">
 
-        <LinearLayout
+        <include
+            android:id="@+id/row_update_details"
+            layout="@layout/item_setting_row"/>
+
+        <View
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_height="1dp"
+            android:background="#EEEEEE"
+            android:layout_marginStart="50dp"/>
 
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="3dp"
-                android:layout_marginBottom="16dp">
+        <include
+            android:id="@+id/row_change_password"
+            layout="@layout/item_setting_row"/>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingVertical="8dp">
+    </LinearLayout>
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Personal Information"
-                        android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:textColor="#555555"
-                        android:paddingHorizontal="16dp"
-                        android:paddingTop="8dp"/>
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="20dp"
+        android:text="Log Out"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:backgroundTint="#D32F2F"/>
 
-                    <include layout="@layout/item_setting_row" android:id="@+id/row_update_details"/>
-                    <include layout="@layout/item_setting_row" android:id="@+id/row_change_password"/>
-
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="3dp"
-                android:layout_marginBottom="24dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingVertical="8dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Others"
-                        android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:textColor="#555555"
-                        android:paddingHorizontal="16dp"
-                        android:paddingTop="8dp"/>
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Version 25090.2.0 (v0:0)"
-                        android:textSize="12sp"
-                        android:textColor="#999999"
-                        android:paddingHorizontal="16dp"
-                        android:paddingBottom="8dp"/>
-
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <Button
-                android:id="@+id/btnLogout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Logout"
-                android:backgroundTint="#D32F2F"
-                android:textColor="@android:color/white"
-                style="@style/Widget.AppCompat.Button.Colored"
-                android:paddingVertical="12dp"
-                android:layout_marginBottom="16dp"/>
-
-        </LinearLayout>
-    </ScrollView>
 </RelativeLayout>

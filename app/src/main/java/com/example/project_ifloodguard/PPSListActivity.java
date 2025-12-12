@@ -1,5 +1,6 @@
 package com.example.project_ifloodguard;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
@@ -149,6 +150,10 @@ public class PPSListActivity extends AppCompatActivity {
                         fullPPSList.add(new PPSModel(id, name, capacity, current));
                     }
                 }
+
+                // ⭐ NEW: SORT A-Z BY CENTER NAME ⭐
+                java.util.Collections.sort(fullPPSList, (a, b) -> a.name.compareToIgnoreCase(b.name));
+
                 filterData(searchInput.getText().toString());
             }
             @Override
@@ -359,22 +364,40 @@ public class PPSListActivity extends AppCompatActivity {
             holder.tvCapacity.setText("Max: " + max + " | Current: " + current);
             holder.tvPercent.setText(percent + "% Full");
             holder.progressBar.setProgress(percent);
-            holder.tvAvailable.setText("Available Slots: " + available);
+            holder.tvAvailable.setText("Available: " + available);
             holder.tvAvailable.setTextColor(Color.parseColor("#388E3C"));
 
             if (percent >= 90) holder.tvPercent.setTextColor(Color.RED);
             else holder.tvPercent.setTextColor(Color.parseColor("#F57C00"));
 
+            // ⭐ ADMIN ONLY BUTTONS ⭐
+            if ("Admin".equals(userRole)) {
+                // Show Buttons
+                holder.btnEdit.setVisibility(View.VISIBLE);
+                holder.btnDelete.setVisibility(View.VISIBLE);
+
+                // EDIT CLICK: Open the Edit Dialog
+                holder.btnEdit.setOnClickListener(v -> showAdminDialog(item));
+
+                // DELETE CLICK: Confirm Delete
+                holder.btnDelete.setOnClickListener(v -> showAdminDeleteConfirmation(item));
+            } else {
+                // Staff: Hide Admin Buttons
+                holder.btnEdit.setVisibility(View.GONE);
+                holder.btnDelete.setVisibility(View.GONE);
+            }
+
+            // ⭐ MAIN CLICK: OPEN VICTIM LIST (For Everyone) ⭐
             holder.itemView.setOnClickListener(v -> {
-                if ("Staff".equals(userRole)) {
-                    android.content.Intent intent = new android.content.Intent(PPSListActivity.this, VictimListActivity.class);
-                    intent.putExtra("CENTER_ID", item.id);
-                    intent.putExtra("CENTER_NAME", item.name);
-                    startActivity(intent);
-                } else {
-                    showAdminDialog(item);
-                }
+                android.content.Intent intent = new android.content.Intent(PPSListActivity.this, VictimListActivity.class);
+                intent.putExtra("CENTER_ID", item.id);
+                intent.putExtra("CENTER_NAME", item.name);
+                intent.putExtra("USER_ROLE", userRole); // Pass Role!
+                startActivity(intent);
             });
+
+            // Remove Long Click (Since we have buttons now)
+            holder.itemView.setOnLongClickListener(null);
         }
 
         @Override
@@ -383,6 +406,8 @@ public class PPSListActivity extends AppCompatActivity {
         class PPSViewHolder extends RecyclerView.ViewHolder {
             TextView tvName, tvCapacity, tvPercent, tvAvailable;
             ProgressBar progressBar;
+            ImageView btnDelete, btnEdit; // ⭐ NEW
+
             public PPSViewHolder(@NonNull View itemView) {
                 super(itemView);
                 tvName = itemView.findViewById(R.id.tvPPSName);
@@ -390,6 +415,9 @@ public class PPSListActivity extends AppCompatActivity {
                 tvPercent = itemView.findViewById(R.id.tvPercent);
                 tvAvailable = itemView.findViewById(R.id.tvAvailable);
                 progressBar = itemView.findViewById(R.id.progressCapacity);
+
+                btnDelete = itemView.findViewById(R.id.btnDeletePPS);
+                btnEdit = itemView.findViewById(R.id.btnEditPPS); // ⭐ Find ID
             }
         }
     }

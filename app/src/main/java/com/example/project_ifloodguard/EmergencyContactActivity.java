@@ -1,12 +1,13 @@
 package com.example.project_ifloodguard;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.MotionEvent; // Don't forget this import!
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -38,26 +39,20 @@ public class EmergencyContactActivity extends AppCompatActivity {
 
     RecyclerView recyclerView;
     ResponderAdapter adapter;
-
-    // Lists
     List<ResponderModel> fullList;
     List<ResponderModel> displayedList;
-
     DatabaseReference dbRef;
     TextView tvEmpty;
-
-    // Filter Variables
     EditText searchInput;
     ChipGroup chipGroup;
     String currentCategory = "All";
-    String userRole = "Staff"; // Default safe role
+    String userRole = "Staff";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.content_emergency_contact);
 
-        // 1. Get Role Logic
         if (getIntent().hasExtra("USER_ROLE")) {
             userRole = getIntent().getStringExtra("USER_ROLE");
         }
@@ -66,15 +61,12 @@ public class EmergencyContactActivity extends AppCompatActivity {
                 .getInstance("https://ifloodguard-default-rtdb.asia-southeast1.firebasedatabase.app/")
                 .getReference("responders_list");
 
-        // 2. Initialize UI
         recyclerView = findViewById(R.id.recyclerResponders);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         tvEmpty = findViewById(R.id.tvEmptyResponders);
-
         searchInput = findViewById(R.id.etSearchResponder);
         chipGroup = findViewById(R.id.chipGroupResponders);
 
-        // ⭐ 1. KEYBOARD SEARCH BUTTON ⭐
         searchInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
                 hideKeyboard();
@@ -83,10 +75,8 @@ public class EmergencyContactActivity extends AppCompatActivity {
             return false;
         });
 
-        // ⭐ 2. ICON CLICK LISTENER (Right Side) ⭐
         searchInput.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_UP) {
-                // Check if touch is on the Right Side
                 if (event.getRawX() >= (searchInput.getRight() - searchInput.getCompoundDrawables()[2].getBounds().width())) {
                     hideKeyboard();
                     return true;
@@ -95,23 +85,19 @@ public class EmergencyContactActivity extends AppCompatActivity {
             return false;
         });
 
-        // 3. Initialize Lists
         fullList = new ArrayList<>();
         displayedList = new ArrayList<>();
         adapter = new ResponderAdapter(displayedList);
         recyclerView.setAdapter(adapter);
 
-        // 4. Role Logic for Add Button
         FloatingActionButton fab = findViewById(R.id.fabAddResponder);
-
         if ("Staff".equals(userRole)) {
-            fab.setVisibility(View.GONE); // Hide for Staff
+            fab.setVisibility(View.GONE);
         } else {
-            fab.setVisibility(View.VISIBLE); // Show for Admin
-            fab.setOnClickListener(v -> showUpdateDialog(null));
+            fab.setVisibility(View.VISIBLE);
+            fab.setOnClickListener(v -> showUpdateDialog(null)); // Pass null for Add New
         }
 
-        // 5. Search Logic
         searchInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -123,7 +109,6 @@ public class EmergencyContactActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
-        // 6. Chip Filter Logic
         chipGroup.setOnCheckedChangeListener((group, checkedId) -> {
             Chip chip = findViewById(checkedId);
             if (chip != null) {
@@ -137,7 +122,6 @@ public class EmergencyContactActivity extends AppCompatActivity {
         loadData();
     }
 
-    // ⭐ HELPER TO HIDE KEYBOARD ⭐
     private void hideKeyboard() {
         android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
         if (imm != null) {
@@ -160,6 +144,7 @@ public class EmergencyContactActivity extends AppCompatActivity {
                         fullList.add(new ResponderModel(id, name, type, phone));
                     }
                 }
+                java.util.Collections.sort(fullList, (a, b) -> a.name.compareToIgnoreCase(b.name));
                 filterData(searchInput.getText().toString());
             }
             @Override
@@ -181,64 +166,110 @@ public class EmergencyContactActivity extends AppCompatActivity {
                 displayedList.add(item);
             }
         }
-
         adapter.notifyDataSetChanged();
         tvEmpty.setVisibility(displayedList.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
-    // --- MAIN INPUT DIALOG ---
+    // ⭐ COMBINED SMART DIALOG (HANDLES ADD & EDIT) ⭐
     private void showUpdateDialog(ResponderModel model) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(model == null ? "Add Agency" : "Update Info");
 
         android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-        layout.setPadding(50, 30, 50, 10);
+        layout.setPadding(50, 40, 50, 10);
 
         final EditText inputName = new EditText(this);
         inputName.setHint("Name (e.g. Skudai Fire Station)");
-        if(model != null) inputName.setText(model.name);
+        if (model != null) inputName.setText(model.name);
         layout.addView(inputName);
 
         final EditText inputType = new EditText(this);
-        inputType.setHint("Type (Police / Fire / Hospital / Center)");
-        if(model != null) inputType.setText(model.type);
+        inputType.setHint("Type (Police / Fire / Hospital)");
+        if (model != null) inputType.setText(model.type);
         layout.addView(inputType);
 
         final EditText inputPhone = new EditText(this);
         inputPhone.setHint("Phone Number");
         inputPhone.setInputType(android.text.InputType.TYPE_CLASS_PHONE);
-        if(model != null) inputPhone.setText(model.phone);
+        if (model != null) inputPhone.setText(model.phone);
         layout.addView(inputPhone);
 
         builder.setView(layout);
 
-        builder.setPositiveButton("Save", (dialog, which) -> {
+        // Setup Buttons (Negative & Neutral first)
+        builder.setNegativeButton("Cancel", null);
+        if (model != null) {
+            builder.setNeutralButton("Delete", (d, w) -> showDeleteConfirmation(model));
+        }
+
+        // We set Positive button listener later to control enable/disable
+        builder.setPositiveButton("Save", null);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // ⭐ BUTTON LOGIC STARTS HERE ⭐
+        android.widget.Button btnSave = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        btnSave.setEnabled(false); // Start Disabled
+        btnSave.setTextColor(Color.GRAY);
+
+        // Define Watcher
+        TextWatcher watcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String name = inputName.getText().toString().trim();
+                String type = inputType.getText().toString().trim();
+                String phone = inputPhone.getText().toString().trim();
+
+                boolean isValid = !name.isEmpty() && !type.isEmpty() && !phone.isEmpty();
+                boolean hasChanges = false;
+
+                if (model == null) {
+                    // ADD NEW MODE: Enabled if fields are not empty
+                    hasChanges = true;
+                } else {
+                    // EDIT MODE: Enabled ONLY if something changed
+                    boolean nameChanged = !name.equals(model.name);
+                    boolean typeChanged = !type.equals(model.type);
+                    boolean phoneChanged = !phone.equals(model.phone);
+                    hasChanges = nameChanged || typeChanged || phoneChanged;
+                }
+
+                if (isValid && hasChanges) {
+                    btnSave.setEnabled(true);
+                    btnSave.setTextColor(Color.parseColor("#1565C0"));
+                } else {
+                    btnSave.setEnabled(false);
+                    btnSave.setTextColor(Color.GRAY);
+                }
+            }
+            @Override
+            public void afterTextChanged(Editable s) {}
+        };
+
+        inputName.addTextChangedListener(watcher);
+        inputType.addTextChangedListener(watcher);
+        inputPhone.addTextChangedListener(watcher);
+
+        // Handle Click Manually
+        btnSave.setOnClickListener(v -> {
             String name = inputName.getText().toString().trim();
             String type = inputType.getText().toString().trim();
             String phone = inputPhone.getText().toString().trim();
 
-            if (name.isEmpty() || phone.isEmpty()) {
-                Toast.makeText(this, "Name and Phone are required!", Toast.LENGTH_SHORT).show();
-                return;
-            }
             showSaveConfirmation(model, name, type, phone);
+            dialog.dismiss();
         });
-
-        if (model != null) {
-            builder.setNeutralButton("Delete", (d, w) -> {
-                showDeleteConfirmation(model);
-            });
-        }
-
-        builder.setNegativeButton("Cancel", null);
-        builder.show();
     }
 
     private void showSaveConfirmation(ResponderModel model, String name, String type, String phone) {
         new AlertDialog.Builder(this)
                 .setTitle("Confirm Save")
-                .setMessage("Are you sure to save this update?")
+                .setMessage("Are you sure you want to save?")
                 .setPositiveButton("Yes", (dialog, which) -> {
                     saveToFirebase(model, name, type, phone);
                 })
@@ -249,10 +280,10 @@ public class EmergencyContactActivity extends AppCompatActivity {
     private void showDeleteConfirmation(ResponderModel model) {
         new AlertDialog.Builder(this)
                 .setTitle("Confirm Delete")
-                .setMessage("Are you sure want to delete this contact?")
+                .setMessage("Delete " + model.name + "?")
                 .setPositiveButton("Yes", (dialog, which) -> {
                     dbRef.child(model.id).removeValue()
-                            .addOnSuccessListener(aVoid -> Toast.makeText(this, "Contact Deleted", Toast.LENGTH_SHORT).show());
+                            .addOnSuccessListener(aVoid -> Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show());
                 })
                 .setNegativeButton("No", null)
                 .show();
@@ -266,10 +297,10 @@ public class EmergencyContactActivity extends AppCompatActivity {
 
         if (model == null) {
             dbRef.push().setValue(map)
-                    .addOnSuccessListener(aVoid -> Toast.makeText(this, "Added Successfully", Toast.LENGTH_SHORT).show());
+                    .addOnSuccessListener(aVoid -> Toast.makeText(this, "Added", Toast.LENGTH_SHORT).show());
         } else {
             dbRef.child(model.id).updateChildren(map)
-                    .addOnSuccessListener(aVoid -> Toast.makeText(this, "Updated Successfully", Toast.LENGTH_SHORT).show());
+                    .addOnSuccessListener(aVoid -> Toast.makeText(this, "Updated", Toast.LENGTH_SHORT).show());
         }
     }
 
@@ -298,24 +329,20 @@ public class EmergencyContactActivity extends AppCompatActivity {
             holder.tvType.setText(item.type);
             holder.tvPhone.setText(item.phone);
 
-            // --- ROLE LOGIC ---
             if ("Admin".equals(userRole)) {
-                // ADMIN: Can Click Row to Edit AND Can Call
-                holder.itemView.setOnClickListener(v -> showUpdateDialog(item));
-
-                holder.btnCall.setVisibility(View.VISIBLE); // Show Call Button
+                // ADMIN: Click to Edit, Show Call Button
+                holder.itemView.setOnClickListener(v -> showUpdateDialog(item)); // Calls the smart dialog
+                holder.btnCall.setVisibility(View.VISIBLE);
                 holder.btnCall.setOnClickListener(v -> {
                     Intent intent = new Intent(Intent.ACTION_DIAL);
                     intent.setData(Uri.parse("tel:" + item.phone));
                     startActivity(intent);
                 });
-
             } else {
-                // STAFF: Cannot Click Row AND Cannot Call
+                // STAFF: View Only
                 holder.itemView.setOnClickListener(null);
                 holder.itemView.setClickable(false);
-
-                holder.btnCall.setVisibility(View.GONE); // Hide Call Button completely
+                holder.btnCall.setVisibility(View.GONE);
                 holder.btnCall.setOnClickListener(null);
             }
         }

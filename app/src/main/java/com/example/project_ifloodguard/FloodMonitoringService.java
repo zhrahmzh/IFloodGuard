@@ -96,24 +96,39 @@ public class FloodMonitoringService extends Service {
         });
     }
 
-    private void checkRiskAndNotify(String currentStatus, Double distance) {
-        // Only trigger if status has CHANGED from what we remember
-        if (!currentStatus.equals(lastKnownStatus)) {
+    // Inside FloodMonitoringService.java
 
+    private void checkRiskAndNotify(String currentStatus, Double distance) {
+        if (!currentStatus.equals(lastKnownStatus)) {
             String formattedDist = String.format(Locale.US, "%.2f", distance);
 
+            // 1. Send Notification (Existing Code)
             if (currentStatus.contains("DANGER")) {
                 sendAlertNotification("🚨 FLOOD DANGER!", "Level: " + formattedDist + "cm. Evacuate!");
                 saveToHistory(currentStatus, distance);
+                incrementUnreadCount(); // <--- ⭐ ADD THIS LINE ⭐
             } else if (currentStatus.contains("WARNING")) {
                 sendAlertNotification("⚠️ Flood Warning", "Level: " + formattedDist + "cm.");
                 saveToHistory(currentStatus, distance);
+                incrementUnreadCount(); // <--- ⭐ ADD THIS LINE ⭐
             }
 
-            // ⭐ UPDATE MEMORY ⭐
+            // Update Memory (Existing Code)
             lastKnownStatus = currentStatus;
-            prefs.edit().putString("lastStatus", currentStatus).apply();
+            if (prefs != null) prefs.edit().putString("lastStatus", currentStatus).apply();
         }
+    }
+
+    // ⭐ NEW HELPER METHOD ⭐
+    private void incrementUnreadCount() {
+        // 1. Save to Memory
+        SharedPreferences prefs = getSharedPreferences("FloodGuardPrefs", MODE_PRIVATE);
+        int currentCount = prefs.getInt("unread_alert_count", 0);
+        prefs.edit().putInt("unread_alert_count", currentCount + 1).apply();
+
+        // ⭐ 2. Send Broadcast to Update UI Instantly ⭐
+        Intent intent = new Intent("UPDATE_BADGE_EVENT");
+        sendBroadcast(intent);
     }
 
     private void sendAlertNotification(String title, String message) {

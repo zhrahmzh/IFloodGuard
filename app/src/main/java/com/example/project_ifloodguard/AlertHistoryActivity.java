@@ -48,23 +48,27 @@ public class AlertHistoryActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.content_alert_history); // Make sure XML name matches Step 1
+        setContentView(R.layout.content_alert_history);
+
+        // ⭐ 1. RESET BADGE COUNT TO 0 (Mark as Read) ⭐
+        android.content.SharedPreferences prefs = getSharedPreferences("FloodGuardPrefs", MODE_PRIVATE);
+        prefs.edit().putInt("unread_alert_count", 0).apply();
 
         if (getIntent().hasExtra("USER_ROLE")) {
             userRole = getIntent().getStringExtra("USER_ROLE");
         }
 
-        // 1. Setup Firebase
+        // 2. Setup Firebase
         dbRef = FirebaseDatabase
                 .getInstance("https://ifloodguard-default-rtdb.asia-southeast1.firebasedatabase.app/")
                 .getReference("waterLevelHistory");
 
-        // 2. Init UI
+        // 3. Init UI
         tvEmpty = findViewById(R.id.tvEmptyHistory);
         searchInput = findViewById(R.id.etSearchHistory);
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
-        // 3. Search Bar Logic (Keyboard & Touch)
+        // 4. Search Bar Logic (Keyboard & Touch)
         searchInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 hideKeyboard();
@@ -94,7 +98,7 @@ public class AlertHistoryActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
-        // 4. Setup List
+        // 5. Setup List
         recyclerView = findViewById(R.id.recyclerHistory);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 

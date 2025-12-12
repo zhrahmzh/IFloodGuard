@@ -1,5 +1,6 @@
 package com.example.project_ifloodguard;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -7,20 +8,21 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-// 1. CHANGED: Import Firestore instead of Realtime Database
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.ByteArrayOutputStream;
@@ -34,7 +36,6 @@ public class ProfileUpdateActivity extends AppCompatActivity {
     Button btnUpdate;
     ImageView ivProfilePic, btnBack;
 
-    // 2. CHANGED: Use Firestore variables
     FirebaseFirestore firestore;
     DocumentReference userRef;
     String userId;
@@ -62,14 +63,20 @@ public class ProfileUpdateActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
         findViewById(R.id.cardProfilePic).setOnClickListener(v -> openFileChooser());
 
-        // 3. CHANGED: Setup Firestore Connection
+        // ⭐ KEYBOARD FIX: Hide when touching background ⭐
+        findViewById(android.R.id.content).setOnTouchListener((v, event) -> {
+            hideKeyboard();
+            return false;
+        });
+
+        // Setup Firestore Connection
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
             userId = user.getUid();
             etEmail.setText(user.getEmail());
+            etEmail.setEnabled(false); // Lock Email
 
             firestore = FirebaseFirestore.getInstance();
-            // Point to "Users" collection -> Document with UserID
             userRef = firestore.collection("Users").document(userId);
 
             loadUserData();
@@ -78,7 +85,29 @@ public class ProfileUpdateActivity extends AppCompatActivity {
             finish();
         }
 
-        btnUpdate.setOnClickListener(v -> updateUserData());
+        // ⭐ UPDATE BUTTON: Show Confirmation Dialog instead of saving directly ⭐
+        btnUpdate.setOnClickListener(v -> showSaveConfirmationDialog());
+    }
+
+    // ⭐ NEW: CONFIRMATION DIALOG ⭐
+    private void showSaveConfirmationDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Save Changes?")
+                .setMessage("Are you sure you want to save these changes?")
+                .setPositiveButton("Yes", (dialog, which) -> updateUserData()) // Calls the actual save method
+                .setNegativeButton("No", null)
+                .show();
+    }
+
+    // ⭐ KEYBOARD HELPER METHOD ⭐
+    private void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        }
     }
 
     private void openFileChooser() {
@@ -118,7 +147,6 @@ public class ProfileUpdateActivity extends AppCompatActivity {
         return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
     }
 
-    // 4. CHANGED: Load Data from Firestore
     private void loadUserData() {
         userRef.get().addOnSuccessListener(documentSnapshot -> {
             if (documentSnapshot.exists()) {
@@ -137,15 +165,12 @@ public class ProfileUpdateActivity extends AppCompatActivity {
                     ivProfilePic.setImageBitmap(decodeImage(imgStr));
                     encodedImageString = imgStr;
                 }
-            } else {
-                Toast.makeText(this, "No profile data found.", Toast.LENGTH_SHORT).show();
             }
         }).addOnFailureListener(e -> {
             Toast.makeText(this, "Error loading data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
     }
 
-    // 5. CHANGED: Update Data in Firestore
     private void updateUserData() {
         String name = etName.getText().toString().trim();
         String phone = etPhone.getText().toString().trim();
@@ -168,7 +193,10 @@ public class ProfileUpdateActivity extends AppCompatActivity {
         }
 
         userRef.update(updates)
-                .addOnSuccessListener(aVoid -> Toast.makeText(this, "Profile Updated!", Toast.LENGTH_SHORT).show())
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Profile Updated!", Toast.LENGTH_SHORT).show();
+                    finish(); // Close Activity
+                })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 }

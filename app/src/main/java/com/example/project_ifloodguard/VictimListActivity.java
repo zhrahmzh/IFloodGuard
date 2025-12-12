@@ -1,14 +1,20 @@
 package com.example.project_ifloodguard;
 
+import android.content.ContentValues;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.MotionEvent; // Import MotionEvent
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -27,6 +33,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +42,8 @@ import java.util.Map;
 public class VictimListActivity extends AppCompatActivity {
 
     String centerId, centerName;
+    String userRole = "Staff"; // Default role
+
     DatabaseReference dbVictims;
     DatabaseReference dbCenterCount;
 
@@ -43,19 +52,20 @@ public class VictimListActivity extends AppCompatActivity {
     List<VictimModel> fullList, displayedList;
     EditText searchInput;
     TextView tvEmpty, tvTitle;
+    ImageView btnExport;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_victim_list);
 
-        // 1. Get Data
+        // 1. Get Data & Role
         if (getIntent().hasExtra("CENTER_ID")) {
             centerId = getIntent().getStringExtra("CENTER_ID");
             centerName = getIntent().getStringExtra("CENTER_NAME");
-        } else {
-            finish();
-            return;
+        }
+        if (getIntent().hasExtra("USER_ROLE")) {
+            userRole = getIntent().getStringExtra("USER_ROLE");
         }
 
         // 2. Setup Firebase
@@ -69,39 +79,52 @@ public class VictimListActivity extends AppCompatActivity {
         tvTitle = findViewById(R.id.tvCenterTitle);
         tvTitle.setText(centerName);
         tvEmpty = findViewById(R.id.tvEmptyVictims);
-
-        // Init Search Input
         searchInput = findViewById(R.id.etSearchVictim);
+        btnExport = findViewById(R.id.btnExport);
+        ImageView btnBack = findViewById(R.id.btnBack);
+        FloatingActionButton fab = findViewById(R.id.fabAddVictim);
 
-        // --- KEYBOARD BUTTON HANDLER (Enter Key) ---
+        // ⭐ 4. PERMISSION LOGIC (Fixed) ⭐
+        if ("Admin".equals(userRole)) {
+            // ADMIN:
+            // 1. Can Download (Show Button)
+            btnExport.setVisibility(View.VISIBLE);
+            btnExport.setOnClickListener(v -> showExportDialog());
+
+            // 2. CANNOT Add Victims (Hide FAB)
+            fab.setVisibility(View.GONE);
+        } else {
+            // STAFF:
+            // 1. Cannot Download (Hide Button)
+            btnExport.setVisibility(View.GONE);
+
+            // 2. Can Add Victims (Show FAB)
+            fab.setVisibility(View.VISIBLE);
+            fab.setOnClickListener(v -> showAddVictimDialog());
+        }
+
+        // Search Logic
         searchInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 hideKeyboard();
                 return true;
             }
             return false;
         });
 
-        // ⭐ NEW: SEARCH ICON CLICK HANDLER (Touch Listener) ⭐
         searchInput.setOnTouchListener((v, event) -> {
-            // Only detect when user LIFTS finger (ACTION_UP)
             if (event.getAction() == MotionEvent.ACTION_UP) {
-                // Check if touch is on the Right Side (where the icon is)
                 if (event.getRawX() >= (searchInput.getRight() - searchInput.getCompoundDrawables()[2].getBounds().width())) {
-                    // User clicked the Icon! Hide Keyboard.
                     hideKeyboard();
-                    return true; // Stop click from doing anything else (like opening keyboard again)
+                    return true;
                 }
             }
-            return false; // Normal typing behavior
+            return false;
         });
 
-        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        btnBack.setOnClickListener(v -> finish());
 
-        FloatingActionButton fab = findViewById(R.id.fabAddVictim);
-        fab.setOnClickListener(v -> showAddVictimDialog());
-
-        // 4. Setup List
+        // Setup List
         recyclerView = findViewById(R.id.recyclerVictims);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         fullList = new ArrayList<>();
@@ -109,7 +132,6 @@ public class VictimListActivity extends AppCompatActivity {
         adapter = new VictimAdapter(displayedList);
         recyclerView.setAdapter(adapter);
 
-        // 5. Search Logic
         searchInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -124,12 +146,9 @@ public class VictimListActivity extends AppCompatActivity {
         loadVictims();
     }
 
-    // ⭐ HELPER METHOD TO HIDE KEYBOARD ⭐
     private void hideKeyboard() {
-        android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-        if (imm != null) {
-            imm.hideSoftInputFromWindow(searchInput.getWindowToken(), 0);
-        }
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (imm != null) imm.hideSoftInputFromWindow(searchInput.getWindowToken(), 0);
     }
 
     private void loadVictims() {
@@ -137,16 +156,31 @@ public class VictimListActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 fullList.clear();
+                int activeCount = 0;
+
                 for (DataSnapshot data : snapshot.getChildren()) {
                     String name = data.child("name").getValue(String.class);
                     String ic = data.child("ic").getValue(String.class);
+                    String status = data.child("status").getValue(String.class);
+
+                    if (status == null) status = "Active";
+
                     if (name != null) {
-                        fullList.add(new VictimModel(data.getKey(), name, ic));
+                        fullList.add(new VictimModel(data.getKey(), name, ic, status));
+                        if (status.equals("Active")) {
+                            activeCount++;
+                        }
                     }
                 }
-                dbCenterCount.setValue(fullList.size());
+
+                // Sort A-Z
+                java.util.Collections.sort(fullList, (a, b) -> a.name.compareToIgnoreCase(b.name));
+
+                // Update count and UI
+                dbCenterCount.setValue(activeCount);
                 filter(searchInput.getText().toString());
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -164,9 +198,51 @@ public class VictimListActivity extends AppCompatActivity {
         tvEmpty.setVisibility(displayedList.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
-    // ==========================================
-    // REGISTER DIALOG
-    // ==========================================
+    private void showExportDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Export Victim List")
+                .setMessage("Download list as CSV file?")
+                .setPositiveButton("Download", (dialog, which) -> exportToCSV())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void exportToCSV() {
+        if (fullList.isEmpty()) {
+            Toast.makeText(this, "No data to export", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        StringBuilder csvData = new StringBuilder();
+        csvData.append("Name,IC Number,Status\n");
+
+        for (VictimModel victim : fullList) {
+            csvData.append(victim.name).append(",'")
+                    .append(victim.ic).append(",")
+                    .append(victim.status).append("\n");
+        }
+
+        try {
+            String fileName = "VictimList_" + centerName.replaceAll(" ", "_") + "_" + System.currentTimeMillis() + ".csv";
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+            values.put(MediaStore.MediaColumns.MIME_TYPE, "text/csv");
+            values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+
+            Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri != null) {
+                OutputStream outputStream = getContentResolver().openOutputStream(uri);
+                if (outputStream != null) {
+                    outputStream.write(csvData.toString().getBytes());
+                    outputStream.close();
+                    Toast.makeText(this, "Saved to Downloads: " + fileName, Toast.LENGTH_LONG).show();
+                }
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Export Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void showAddVictimDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Register New Victim");
@@ -193,11 +269,8 @@ public class VictimListActivity extends AppCompatActivity {
         dialog.show();
 
         android.widget.Button btnRegister = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-        android.widget.Button btnCancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-
         btnRegister.setEnabled(false);
         btnRegister.setTextColor(Color.GRAY);
-        btnCancel.setTextColor(Color.parseColor("#D32F2F"));
 
         TextWatcher watcher = new TextWatcher() {
             @Override
@@ -225,51 +298,38 @@ public class VictimListActivity extends AppCompatActivity {
             String ic = inputIC.getText().toString().trim();
             if (name.isEmpty() || ic.length() != 12) return;
             dialog.dismiss();
-            showConfirmRegisterDialog(name, ic);
-        });
-
-        btnCancel.setOnClickListener(v -> {
-            String name = inputName.getText().toString().trim();
-            String ic = inputIC.getText().toString().trim();
-            if (!name.isEmpty() || !ic.isEmpty()) {
-                showConfirmCancelDialog(dialog);
-            } else {
-                dialog.dismiss();
-            }
+            saveVictimToFirebase(name, ic);
         });
     }
 
-    private void showConfirmRegisterDialog(String name, String ic) {
+    private void saveVictimToFirebase(String name, String ic) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", name);
+        map.put("ic", ic);
+        map.put("status", "Active");
+        dbVictims.push().setValue(map)
+                .addOnSuccessListener(a -> Toast.makeText(this, "Victim Registered", Toast.LENGTH_SHORT).show());
+    }
+
+    private void showCheckOutDialog(VictimModel model) {
         new AlertDialog.Builder(this)
-                .setTitle("Confirm Registration")
-                .setMessage("Register this victim?\n\nName: " + name + "\nIC: " + ic)
-                .setPositiveButton("Yes, Register", (dialog, which) -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("name", name);
-                    map.put("ic", ic);
-                    dbVictims.push().setValue(map)
-                            .addOnSuccessListener(a -> Toast.makeText(this, "Victim Registered Successfully", Toast.LENGTH_SHORT).show());
+                .setTitle("Confirm Return Home")
+                .setMessage("Has " + model.name + " returned home?")
+                .setPositiveButton("Yes, Returned", (dialog, which) -> {
+                    dbVictims.child(model.id).child("status").setValue("Returned")
+                            .addOnSuccessListener(a -> Toast.makeText(this, "Status Updated", Toast.LENGTH_SHORT).show());
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private void showConfirmCancelDialog(AlertDialog parentDialog) {
-        new AlertDialog.Builder(this)
-                .setTitle("Discard Changes?")
-                .setMessage("Are you sure you want to discard this info?")
-                .setPositiveButton("Yes", (dialog, which) -> parentDialog.dismiss())
-                .setNegativeButton("No", null)
-                .show();
-    }
-
     private void showDeleteConfirm(VictimModel model) {
         new AlertDialog.Builder(this)
-                .setTitle("Confirm Delete")
-                .setMessage("Are you sure you want to remove " + model.name + "?")
-                .setPositiveButton("Yes, Remove", (dialog, which) -> {
-                    dbVictims.child(model.id).removeValue()
-                            .addOnSuccessListener(a -> Toast.makeText(this, "Victim Removed", Toast.LENGTH_SHORT).show());
+                .setTitle("Delete Record")
+                .setMessage("Delete " + model.name + "?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    dbVictims.child(model.id).removeValue();
+                    Toast.makeText(this, "Record Deleted", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -277,9 +337,9 @@ public class VictimListActivity extends AppCompatActivity {
 
     // --- MODEL ---
     class VictimModel {
-        String id, name, ic;
-        public VictimModel(String id, String name, String ic) {
-            this.id = id; this.name = name; this.ic = ic;
+        String id, name, ic, status;
+        public VictimModel(String id, String name, String ic, String status) {
+            this.id = id; this.name = name; this.ic = ic; this.status = status;
         }
     }
 
@@ -300,7 +360,41 @@ public class VictimListActivity extends AppCompatActivity {
             VictimModel item = list.get(position);
             holder.tvName.setText(item.name);
             holder.tvIC.setText("IC: " + item.ic);
+
+            // ⭐ 1. ADMIN VIEW: READ-ONLY (No Buttons) ⭐
+            if ("Admin".equals(userRole)) {
+                // HIDE ALL BUTTONS
+                holder.btnCheckOut.setVisibility(View.GONE);
+                holder.btnDelete.setVisibility(View.GONE);
+
+                // Just show text status
+                if ("Returned".equals(item.status)) {
+                    holder.tvName.setTextColor(Color.GRAY);
+                    holder.tvName.setText(item.name + " (Returned)");
+                } else {
+                    holder.tvName.setTextColor(Color.BLACK);
+                }
+            }
+
+            // ⭐ 2. STAFF VIEW: MANAGE VICTIMS (Show Buttons) ⭐
+            else {
+                if ("Returned".equals(item.status)) {
+                    // If Returned: Gray text, Hide "Check Out", Show "Delete" (Clean up)
+                    holder.tvName.setTextColor(Color.GRAY);
+                    holder.tvName.setText(item.name + " (Returned)");
+                    holder.btnCheckOut.setVisibility(View.GONE);
+                    holder.btnDelete.setVisibility(View.VISIBLE);
+                } else {
+                    // If Active: Black text, Show ALL Buttons
+                    holder.tvName.setTextColor(Color.BLACK);
+                    holder.btnCheckOut.setVisibility(View.VISIBLE);
+                    holder.btnDelete.setVisibility(View.VISIBLE);
+                }
+            }
+
+            // Set Listeners (Only works if buttons are visible)
             holder.btnDelete.setOnClickListener(v -> showDeleteConfirm(item));
+            holder.btnCheckOut.setOnClickListener(v -> showCheckOutDialog(item));
         }
 
         @Override
@@ -308,12 +402,13 @@ public class VictimListActivity extends AppCompatActivity {
 
         class Holder extends RecyclerView.ViewHolder {
             TextView tvName, tvIC;
-            ImageView btnDelete;
+            ImageView btnDelete, btnCheckOut;
             public Holder(@NonNull View itemView) {
                 super(itemView);
                 tvName = itemView.findViewById(R.id.tvVictimName);
                 tvIC = itemView.findViewById(R.id.tvVictimIC);
                 btnDelete = itemView.findViewById(R.id.btnDeleteVictim);
+                btnCheckOut = itemView.findViewById(R.id.btnCheckOut);
             }
         }
     }

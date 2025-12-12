@@ -3,67 +3,101 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="10dp"
+    android:layout_marginBottom="10dp"
+    android:layout_marginHorizontal="5dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="4dp"
-    app:cardBackgroundColor="#FFFFFF">
+    app:cardElevation="4dp">
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvPPSName"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_toStartOf="@id/tvPercent"
-            android:text="Sekolah Kebangsaan Skudai"
-            android:textColor="#1565C0"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:ellipsize="end"
-            android:maxLines="1" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
 
-        <TextView
-            android:id="@+id/tvPercent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:text="85%"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#F57C00"/>
+            <TextView
+                android:id="@+id/tvPPSName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Dewan Serbaguna Skudai"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#1565C0"/>
 
-        <TextView
-            android:id="@+id/tvCapacity"
-            android:layout_width="wrap_content"
+            <ImageView
+                android:id="@+id/btnEditPPS"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@android:drawable/ic_menu_edit"
+                app:tint="#1565C0"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="4dp"
+                android:visibility="gone"
+                android:layout_marginEnd="5dp"
+                android:contentDescription="Edit Center"/>
+
+            <ImageView
+                android:id="@+id/btnDeletePPS"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@android:drawable/ic_menu_delete"
+                app:tint="#D32F2F"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="4dp"
+                android:visibility="gone"
+                android:contentDescription="Delete Center"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/tvPPSName"
-            android:layout_marginTop="8dp"
-            android:text="Max: 300 | Current: 250"
-            android:textSize="14sp"
-            android:textColor="#757575"/>
+            android:orientation="horizontal"
+            android:layout_marginBottom="5dp">
+
+            <TextView
+                android:id="@+id/tvCapacity"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Max: 100 | Current: 45"
+                android:textSize="14sp"
+                android:textColor="#616161"/>
+
+            <TextView
+                android:id="@+id/tvPercent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="45% Full"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#F57C00"/>
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progressCapacity"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:layout_marginBottom="5dp"
+            android:progressDrawable="@drawable/custom_progress_bar"
+            android:progress="45"/>
 
         <TextView
             android:id="@+id/tvAvailable"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/tvCapacity"
-            android:layout_marginTop="4dp"
-            android:text="Available Slots: 50"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="#388E3C"/> <ProgressBar
-        android:id="@+id/progressCapacity"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="8dp"
-        android:layout_below="@id/tvAvailable"
-        android:layout_marginTop="12dp"
-        android:progressDrawable="@drawable/custom_progress_bar"
-        android:max="100"
-        android:progress="85"/>
+            android:text="Available Slots: 55"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:textColor="#388E3C"
+            android:layout_gravity="end"/>
 
-    </RelativeLayout>
+    </LinearLayout>
 </androidx.cardview.widget.CardView>

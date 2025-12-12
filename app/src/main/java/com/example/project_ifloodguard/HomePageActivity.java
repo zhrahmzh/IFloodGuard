@@ -2,12 +2,16 @@ package com.example.project_ifloodguard;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.MenuItem;
+import android.view.MenuItem; // Import needed
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -18,9 +22,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
 import androidx.activity.OnBackPressedCallback;
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -31,29 +35,30 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 public class HomePageActivity extends AppCompatActivity {
 
-    // --- UI Variables ---
     FrameLayout contentFrame;
     TextView tvHomeLevel, tvHomeStatus, tvHomeTime, tvHomeLocation;
-
-    // --- Firebase ---
     DatabaseReference dbRef;
+    private static final String CHANNEL_ID = "flood_alert_channel";
+    String userRole = "Staff";
 
-    // --- User Role ---
-    String userRole = "Staff"; // Default to Staff for safety
+    // ⭐ BROADCAST RECEIVER TO UPDATE BADGE INSTANTLY ⭐
+    private final BroadcastReceiver badgeReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            updateHistoryBadge();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_homepage);
 
-        // ⭐ START BACKGROUND SERVICE ⭐
-        // The Service handles Notifications & History now.
+        // Start Service
         Intent serviceIntent = new Intent(this, FloodMonitoringService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent);
@@ -61,97 +66,90 @@ public class HomePageActivity extends AppCompatActivity {
             startService(serviceIntent);
         }
 
-        // 1. Get Role from Login Activity
         if (getIntent().hasExtra("USER_ROLE")) {
             userRole = getIntent().getStringExtra("USER_ROLE");
         }
 
-        // 2. Setup Toolbar
+        createNotificationChannel();
+        checkPermission();
+
         contentFrame = findViewById(R.id.content_frame);
         androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("Home");
+        if (getSupportActionBar() != null) getSupportActionBar().setTitle("Home");
 
-        // 3. Firebase Connection (Realtime Database for IoT Data)
         dbRef = FirebaseDatabase
                 .getInstance("https://ifloodguard-default-rtdb.asia-southeast1.firebasedatabase.app/")
                 .getReference("waterLevel");
 
-        // 4. Load Layout & Views
         loadFragment(R.layout.content_home_page);
         refreshHomeViews();
-        startFirebaseListener(); // This now ONLY updates the UI
-
-        // 5. SETUP BOTTOM NAVIGATION
+        startFirebaseListener();
         setupBottomNavigation();
 
-        // 6. HANDLE BACK BUTTON
+        // ⭐ HANDLE BACK BUTTON WITH CONFIRMATION ⭐
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                showLogoutConfirmation();
+                showExitConfirmation();
             }
         });
-    } // <--- ✅ CORRECT CLOSING BRACE LOCATION
-
-    // --- LOGOUT CONFIRMATION POPUP ---
-    private void showLogoutConfirmation() {
-        new AlertDialog.Builder(this)
-                .setTitle("Logout")
-                .setMessage("Are you sure want to logout?")
-                .setPositiveButton("Yes", (dialog, which) -> {
-                    performLogout();
-                })
-                .setNegativeButton("No", (dialog, which) -> {
-                    dialog.dismiss();
-                })
-                .show();
     }
 
-    // --- PERFORM LOGOUT LOGIC ---
-    private void performLogout() {
-        // Stop the background service when logging out (Optional, but good practice)
-        stopService(new Intent(this, FloodMonitoringService.class));
-
-        FirebaseAuth.getInstance().signOut();
-        Toast.makeText(this, "Logged Out", Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(this, LoginActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
+    // ⭐ REGISTER RECEIVER ON START ⭐
+    @Override
+    protected void onStart() {
+        super.onStart();
+        IntentFilter filter = new IntentFilter("UPDATE_BADGE_EVENT");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(badgeReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(badgeReceiver, filter);
+        }
+        updateHistoryBadge();
     }
 
-    // --- BOTTOM NAVIGATION LOGIC ---
-    private void setupBottomNavigation() {
-        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-
-        if (bottomNav != null) {
-            bottomNav.setSelectedItemId(R.id.bottom_home);
-
-            bottomNav.setOnItemSelectedListener(item -> {
-                int id = item.getItemId();
-
-                if (id == R.id.bottom_home) {
-                    return true;
-                }
-                else if (id == R.id.bottom_pps) {
-                    Intent intent = new Intent(HomePageActivity.this, PPSListActivity.class);
-                    intent.putExtra("USER_ROLE", userRole); // Pass Role
-                    startActivity(intent);
-                    return true;
-                }
-                else if (id == R.id.bottom_history) {
-                    Intent intent = new Intent(HomePageActivity.this, AlertHistoryActivity.class);
-                    intent.putExtra("USER_ROLE", userRole); // Pass Role
-                    startActivity(intent);
-                    return true;
-                }
-                return false;
-            });
+    // ⭐ UNREGISTER ON STOP ⭐
+    @Override
+    protected void onStop() {
+        super.onStop();
+        try {
+            unregisterReceiver(badgeReceiver);
+        } catch (IllegalArgumentException e) {
+            // Receiver not registered
         }
     }
 
-    // --- TOOLBAR SETTINGS MENU LOGIC ---
+    @Override
+    protected void onResume() {
+        super.onResume();
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.bottom_home);
+        }
+        updateHistoryBadge();
+    }
+
+    private void updateHistoryBadge() {
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        if (bottomNav != null) {
+            SharedPreferences prefs = getSharedPreferences("FloodGuardPrefs", MODE_PRIVATE);
+            int count = prefs.getInt("unread_alert_count", 0);
+
+            BadgeDrawable badge = bottomNav.getOrCreateBadge(R.id.bottom_history);
+
+            if (count > 0) {
+                badge.setVisible(true);
+                badge.setNumber(count);
+                badge.setBackgroundColor(Color.RED);
+                badge.setBadgeTextColor(Color.WHITE);
+            } else {
+                badge.setVisible(false);
+            }
+        }
+    }
+
+    // ⭐ SETTINGS MENU LOGIC (ADDED BACK!) ⭐
     @Override
     public boolean onCreateOptionsMenu(android.view.Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_menu, menu);
@@ -161,14 +159,67 @@ public class HomePageActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_settings_icon) {
-            Intent intent = new Intent(HomePageActivity.this, SettingsActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(HomePageActivity.this, SettingsActivity.class));
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    // --- FIREBASE LISTENER (UI UPDATES ONLY) ---
+    private void showLogoutConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("Logout")
+                .setMessage("Are you sure want to logout?")
+                .setPositiveButton("Yes", (dialog, which) -> performLogout())
+                .setNegativeButton("No", null)
+                .show();
+    }
+
+    private void showExitConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("Exit App")
+                .setMessage("Are you sure you want to exit?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    moveTaskToBack(true);
+                })
+                .setNegativeButton("No", (dialog, which) -> {
+                    dialog.dismiss();
+                })
+                .show();
+    }
+
+    private void performLogout() {
+        stopService(new Intent(this, FloodMonitoringService.class));
+        FirebaseAuth.getInstance().signOut();
+        Toast.makeText(this, "Logged Out", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, LoginActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    private void setupBottomNavigation() {
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.bottom_home);
+            bottomNav.setOnItemSelectedListener(item -> {
+                int id = item.getItemId();
+                if (id == R.id.bottom_home) return true;
+                else if (id == R.id.bottom_pps) {
+                    Intent intent = new Intent(HomePageActivity.this, PPSListActivity.class);
+                    intent.putExtra("USER_ROLE", userRole);
+                    startActivity(intent);
+                    return true;
+                } else if (id == R.id.bottom_history) {
+                    Intent intent = new Intent(HomePageActivity.this, AlertHistoryActivity.class);
+                    intent.putExtra("USER_ROLE", userRole);
+                    startActivity(intent);
+                    return true;
+                }
+                return false;
+            });
+        }
+    }
+
     private void startFirebaseListener() {
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -182,7 +233,6 @@ public class HomePageActivity extends AppCompatActivity {
                     String status = snapshot.child("status").getValue(String.class);
                     String location = snapshot.child("location").getValue(String.class);
 
-                    // Update UI Elements
                     if (tvHomeStatus != null && status != null) {
                         tvHomeStatus.setText(status);
                         String formattedDist = String.format(Locale.US, "%.2f", distance);
@@ -191,31 +241,37 @@ public class HomePageActivity extends AppCompatActivity {
                         String currentTime = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()).format(new Date());
                         tvHomeTime.setText("Updated: " + currentTime);
 
-                        if (location != null && !location.isEmpty()) {
-                            tvHomeLocation.setText(location);
-                        } else {
-                            tvHomeLocation.setText("Location Unknown");
-                        }
+                        if (location != null) tvHomeLocation.setText(location);
 
-                        // Colors
-                        View layoutStatus = (View) tvHomeStatus.getParent();
+                        // Find the Badge Background (The Pill)
+                        android.graphics.drawable.GradientDrawable statusBg =
+                                (android.graphics.drawable.GradientDrawable) tvHomeStatus.getBackground();
+
                         if (status.contains("DANGER")) {
-                            tvHomeStatus.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_danger_red));
-                            tvHomeLevel.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_danger_red));
-                            if(layoutStatus != null) layoutStatus.setBackgroundColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_danger_bg));
+                            // Text Colors
+                            tvHomeLevel.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_danger_text));
+
+                            // Badge Color (Red)
+                            statusBg.setColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_danger_text));
+                            tvHomeStatus.setText("DANGER ALERT"); // More urgent text
+
                         } else if (status.contains("WARNING")) {
-                            tvHomeStatus.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_warning_yellow));
-                            tvHomeLevel.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_warning_yellow));
-                            if(layoutStatus != null) layoutStatus.setBackgroundColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_warning_bg));
+                            // Text Colors
+                            tvHomeLevel.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_warning_text));
+
+                            // Badge Color (Orange)
+                            statusBg.setColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_warning_text));
+                            tvHomeStatus.setText("WARNING");
+
                         } else {
-                            tvHomeStatus.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_normal_green));
-                            tvHomeLevel.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.brand_blue));
-                            if(layoutStatus != null) layoutStatus.setBackgroundColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_normal_bg));
+                            // Text Colors
+                            tvHomeLevel.setTextColor(ContextCompat.getColor(HomePageActivity.this, R.color.brand_primary));
+
+                            // Badge Color (Green)
+                            statusBg.setColor(ContextCompat.getColor(HomePageActivity.this, R.color.status_normal_text));
+                            tvHomeStatus.setText("NORMAL");
                         }
                     }
-
-                    // ⚠️ REMOVED "checkRiskAndNotify" TO PREVENT DOUBLE ALERTS
-                    // The Background Service handles the Notification & History Saving now.
                 }
             }
             @Override
@@ -223,23 +279,19 @@ public class HomePageActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-        if (bottomNav != null) {
-            bottomNav.setSelectedItemId(R.id.bottom_home);
-        }
-    }
-
     private void refreshHomeViews() {
         tvHomeLevel = findViewById(R.id.tvHomeLevel);
         tvHomeStatus = findViewById(R.id.tvHomeStatus);
         tvHomeTime = findViewById(R.id.tvHomeTime);
         tvHomeLocation = findViewById(R.id.tvHomeLocation);
-
         View btnContacts = findViewById(R.id.btnQuickContacts);
         TextView tvEmergencyHeader = findViewById(R.id.tvEmergencyHeader);
+
+        // ⭐ SETUP INFO BUTTON ⭐
+        View btnInfo = findViewById(R.id.btnLevelInfo);
+        if (btnInfo != null) {
+            btnInfo.setOnClickListener(v -> showLevelInfoDialog());
+        }
 
         if (btnContacts != null) {
             if ("Staff".equals(userRole)) {
@@ -257,8 +309,39 @@ public class HomePageActivity extends AppCompatActivity {
         }
     }
 
+    // ⭐ NEW METHOD: SHOW DIALOG ⭐
+    private void showLevelInfoDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_level_info, null);
+        builder.setView(view);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Handle "Got it" button
+        View btnClose = view.findViewById(R.id.btnCloseDialog);
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> dialog.dismiss());
+        }
+    }
+
     private void loadFragment(int layoutResId) {
         contentFrame.removeAllViews();
         getLayoutInflater().inflate(layoutResId, contentFrame, true);
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Flood Alerts", NotificationManager.IMPORTANCE_HIGH);
+            getSystemService(NotificationManager.class).createNotificationChannel(channel);
+        }
+    }
+
+    private void checkPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
     }
 }

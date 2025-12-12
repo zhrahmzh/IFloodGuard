@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FA">
+    android:background="@color/app_background">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,54 +13,64 @@
         android:paddingTop="10dp"
         android:paddingBottom="100dp"
         android:gravity="center_horizontal">
-        <View
-            android:layout_width="match_parent"
+
+        <View android:layout_width="match_parent"
             android:layout_height="60dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Live Flood Monitor"
-            android:textSize="24sp"
-            android:fontFamily="sans-serif-medium"
-            android:textColor="#212121"
-            android:layout_marginBottom="8dp"/>
-
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:id="@+id/headerSection"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/ic_launcher_background"
-            android:backgroundTint="#E0E0E0"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="6dp"
-            android:layout_marginBottom="25dp">
+            android:gravity="center_vertical"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Live Monitor"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"/>
+
+                <TextView
+                    android:id="@+id/tvHomeLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Checking Location..."
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:drawablePadding="5dp"
+                    app:drawableStartCompat="@android:drawable/ic_menu_mylocation"
+                    app:drawableTint="@color/brand_primary"/>
+            </LinearLayout>
 
             <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:src="@android:drawable/ic_menu_mylocation"
-                app:tint="#D32F2F"
-                android:layout_marginEnd="6dp"/>
-
-            <TextView
-                android:id="@+id/tvHomeLocation"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Fetching Location..."
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="#424242"/>
+                android:id="@+id/btnLevelInfo"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@android:drawable/ic_dialog_info"
+                app:tint="@color/icon_tint_default"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"/>
         </LinearLayout>
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cardStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="6dp"
-            android:layout_marginBottom="35dp">
+            app:cardCornerRadius="20dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="@color/white"
+            android:layout_marginBottom="30dp">
 
             <LinearLayout
                 android:id="@+id/layoutStatus"
@@ -68,72 +78,94 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="30dp"
-                android:gravity="center"
-                android:background="#E3F2FD">
+                android:gravity="center">
 
                 <TextView
                     android:id="@+id/tvHomeStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Loading..."
-                    android:textSize="20sp"
-                    android:letterSpacing="0.1"
+                    android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="#424242"
-                    android:layout_marginBottom="10dp"/>
+                    android:letterSpacing="0.1"
+                    android:textColor="@color/white"
+                    android:background="@drawable/rounded_pill_bg"
+                    android:paddingHorizontal="20dp"
+                    android:paddingVertical="8dp"
+                    android:layout_marginBottom="20dp"/>
 
                 <TextView
                     android:id="@+id/tvHomeLevel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="-- cm"
-                    android:textSize="48sp"
-                    android:textStyle="bold"
-                    android:textColor="#1976D2"
-                    android:layout_marginBottom="5dp"/>
+                    android:textSize="56sp"
+                    android:fontFamily="sans-serif-light"
+                    android:textColor="@color/text_primary"
+                    android:includeFontPadding="false"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Current Water Level"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="20dp"/>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/divider"
+                    android:layout_marginBottom="15dp"/>
 
                 <TextView
                     android:id="@+id/tvHomeTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Last Update: --"
-                    android:textSize="12sp"
-                    android:textColor="#757575"/>
+                    android:textSize="14sp"
+                    android:textStyle="normal"
+                    android:textColor="#000000"
+                    android:gravity="center"/>
+
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
         <TextView
             android:id="@+id/tvEmergencyHeader"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Emergency Action"
+            android:text="Quick Actions"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="#424242"
+            android:textColor="@color/text_primary"
             android:layout_marginBottom="15dp"/>
 
         <androidx.cardview.widget.CardView
             android:id="@+id/btnQuickContacts"
             android:layout_width="match_parent"
-            android:layout_height="100dp"
+            android:layout_height="wrap_content"
             app:cardCornerRadius="16dp"
             app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/white"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:background="#FFEBEE"
-                android:padding="15dp">
+                android:padding="20dp">
+
                 <ImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:src="@android:drawable/ic_menu_call"
-                    app:tint="#D32F2F"
+                    app:tint="@color/status_danger_text"
+                    android:background="@color/status_danger_bg"
+                    android:padding="10dp"
                     android:layout_marginEnd="20dp"/>
 
                 <LinearLayout
@@ -144,19 +176,18 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Call Authorities"
+                        android:text="Emergency Call"
                         android:textStyle="bold"
-                        android:textSize="18sp"
-                        android:textColor="#D32F2F"/>
+                        android:textSize="16sp"
+                        android:textColor="@color/text_primary"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tap here for emergency contacts"
+                        android:text="Contact authorities immediately"
                         android:textSize="12sp"
-                        android:textColor="#D32F2F"/>
+                        android:textColor="@color/text_secondary"/>
                 </LinearLayout>
-
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
